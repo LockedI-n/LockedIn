@@ -1,13 +1,30 @@
 
 import { useState } from "react";
 import { getQuiz, gradeAnswer } from "../lib/api.js";
-import { sampleCourse } from "../lib/sampleData.js";
-import { QUIZ_COUNT } from "../lib/config.js";
+import { QUIZ_COUNT, MASTERY_THRESHOLD, SIDEKICK_NAME } from "../lib/config.js";
+import Sidekick from "../components/Sidekick.jsx";
 
 const LETTERS = ["A", "B", "C", "D"];
 
-export default function Test({ course = sampleCourse, onComplete }) {
-  const [topicName, setTopicName] = useState("Decision Trees");
+// The first topic worth testing: the one asked for, else one with a summary, else the first.
+const defaultTopic = (course, wanted) =>
+  course?.topics.find((t) => t.name === wanted)?.name ??
+  course?.topics.find((t) => t.summary)?.name ??
+  course?.topics[0]?.name ??
+  "";
+
+const MODE_LABELS = { mcq: "Multiple choice", written: "Written answer", feynman: "Teach Sparky" };
+
+// Props (App.jsx passes these):
+//   courses          saved courses (from storage)
+//   initialCourseId  course to open (e.g. from a habit's "Prove it")
+//   initialTopic     topic to open
+//   onComplete(result)  called with { courseId, topic, mode, score, ... } when a test finishes
+//   onNavigate(page)    go to another page, e.g. "Dashboard"
+export default function Test({ courses = [], initialCourseId, initialTopic, onComplete, onNavigate = () => {} }) {
+  const [courseId, setCourseId] = useState(initialCourseId ?? courses[0]?.id);
+  const course = courses.find((c) => c.id === courseId) ?? courses[0];
+  const [topicName, setTopicName] = useState(() => defaultTopic(course, initialTopic));
   const [mode, setMode] = useState("mcq");
   const [writtenAnswer, setWrittenAnswer] = useState("");
   const [gradeResult, setGradeResult] = useState(null);
@@ -23,7 +40,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
   const [error, setError] = useState("");
   const [fallback, setFallback] = useState(false);
 
-  const topic = course.topics.find((t) => t.name === topicName);
+  const topic = course?.topics.find((t) => t.name === topicName);
   const question = quiz[currentQuestion];
 
   // Generate a quiz for the selected topic.
@@ -86,6 +103,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
     onComplete?.({
       courseId: course.id,
       topic: topicName,
+      mode: "mcq",
       score,
       total: quiz.length,
       correct,
@@ -110,7 +128,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
         courseName: course.name,
         topic: topic.name,
         summary: topic.summary,
-        mode: "written",
+        mode,
         answer: writtenAnswer.trim(),
       });
 
@@ -124,7 +142,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
       onComplete?.({
         courseId: course.id,
         topic: topicName,
-        mode: "written",
+        mode,
         score: result.score,
         total: 100,
         answer: writtenAnswer.trim(),
@@ -163,52 +181,81 @@ export default function Test({ course = sampleCourse, onComplete }) {
     ? Math.round((score / quiz.length) * 100)
     : 0;
 
+  if (!course) {
+    return (
+      <section className="space-y-6">
+        <Sidekick mood="nudge" message="Add a course first, then come back and prove what you know!" />
+        <button
+          onClick={() => onNavigate("Add course")}
+          className="rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
+        >
+          Add a course
+        </button>
+      </section>
+    );
+  }
+
+  const finalScore = gradeResult ? gradeResult.score : submitted ? percentage : null;
+  const sparky =
+    finalScore != null
+      ? finalScore >= MASTERY_THRESHOLD
+        ? { mood: "proud", message: `${finalScore}% on ${topicName}! That counts as passed. Your ring is full for this course.` }
+        : { mood: "nudge", message: `${finalScore}% on ${topicName}. Not there yet, so it'll come back as a habit. Review what you missed!` }
+      : loading || grading
+        ? { mood: "thinking", message: loading ? "Writing your questions..." : "Reading your answer carefully..." }
+        : mode === "feynman"
+          ? { mood: "happy", message: `Teach me ${topicName || "this topic"} like I've never heard of it. I'll ask about anything confusing!` }
+          : { mood: "happy", message: "Prove what you know! Pick a topic and a way to be tested." };
+
   return (
     <section className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">TEST PAGE UPDATED</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Test what you've learned with Sparky.
-        </p>
-      </div>
+      <Sidekick mood={sparky.mood} message={sparky.message} />
 
       {/* MODE AND TOPIC SELECTION */}
       {quiz.length === 0 && !gradeResult && (
         <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <div>
             <p className="mb-2 text-sm font-medium">Choose a test mode</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMode("mcq")}
-                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                  mode === "mcq"
-                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
-                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
-                }`}
-              >
-                Multiple Choice
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("written")}
-                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                  mode === "written"
-                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
-                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
-                }`}
-              >
-                Written Response
-              </button>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(MODE_LABELS).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setMode(id)}
+                  className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
+                    mode === id
+                      ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                      : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium">
               Course
             </label>
-            <div className="rounded-lg bg-slate-800 px-4 py-3 text-slate-300">
-              {course.name}
-            </div>
+            {courses.length > 1 ? (
+              <select
+                value={course.id}
+                onChange={(e) => {
+                  const next = courses.find((c) => c.id === e.target.value);
+                  setCourseId(e.target.value);
+                  setTopicName(defaultTopic(next));
+                }}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 outline-none focus:border-amber-400"
+              >
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="rounded-lg bg-slate-800 px-4 py-3 text-slate-300">{course.name}</div>
+            )}
           </div>
 
           <div>
@@ -228,6 +275,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
               {course.topics.map((t) => (
                 <option key={t.name} value={t.name}>
                   {t.name}
+                  {t.score != null ? ` (last score ${t.score}%)` : ""}
                 </option>
               ))}
             </select>
@@ -244,7 +292,8 @@ export default function Test({ course = sampleCourse, onComplete }) {
             </div>
           ) : (
             <p className="text-sm text-slate-400">
-              No lecture summary is available for this topic yet.
+              No lecture summary for this topic yet, so questions will use general course knowledge.
+              Upload slides on the Add course page for better questions.
             </p>
           )}
 
@@ -267,19 +316,20 @@ export default function Test({ course = sampleCourse, onComplete }) {
       )}
 
       {/* WRITTEN RESPONSE */}
-      {mode === "written" && quiz.length === 0 && !gradeResult && (
+      {mode !== "mcq" && quiz.length === 0 && !gradeResult && (
         <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <div>
             <p className="text-sm font-medium text-amber-400">{course.name}</p>
             <h3 className="mt-1 text-lg font-semibold">{topicName}</h3>
             <p className="mt-2 text-sm text-slate-400">
-              Explain this topic in your own words. Include the key ideas,
-              how they work, and why they matter.
+              {mode === "feynman"
+                ? `Teach ${SIDEKICK_NAME} this topic in simple words, as if they've never heard of it. Use an example. If you can explain it simply, you understand it.`
+                : "Explain this topic in your own words. Include the key ideas, how they work, and why they matter."}
             </p>
           </div>
 
           <label htmlFor="written-answer" className="block text-sm font-medium">
-            Your explanation
+            {mode === "feynman" ? `Your lesson for ${SIDEKICK_NAME}` : "Your explanation"}
           </label>
           <textarea
             id="written-answer"
@@ -306,17 +356,17 @@ export default function Test({ course = sampleCourse, onComplete }) {
             disabled={grading || !writtenAnswer.trim()}
             className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {grading ? "Evaluating your explanation..." : "Submit for Evaluation"}
+            {grading ? "Evaluating your explanation..." : mode === "feynman" ? `Teach ${SIDEKICK_NAME}` : "Submit for Evaluation"}
           </button>
         </div>
       )}
 
       {/* WRITTEN RESULTS */}
-      {mode === "written" && gradeResult && (
+      {mode !== "mcq" && gradeResult && (
         <div className="space-y-5">
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
             <p className="text-sm font-medium text-slate-400">
-              Written response evaluated
+              {mode === "feynman" ? `${SIDEKICK_NAME} learned from you` : "Written response evaluated"}
             </p>
             <p
               className={`my-3 text-5xl font-bold ${
@@ -365,7 +415,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
           {gradeResult.sidekickMessage && (
             <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400">
-                Sparky's feedback
+                {SIDEKICK_NAME}'s feedback
               </p>
               <p className="text-sm leading-relaxed text-slate-300">
                 {gradeResult.sidekickMessage}
@@ -387,6 +437,12 @@ export default function Test({ course = sampleCourse, onComplete }) {
             className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
           >
             Try Another Topic
+          </button>
+          <button
+            onClick={() => onNavigate("Dashboard")}
+            className="w-full rounded-lg bg-slate-800 px-4 py-3 font-semibold text-slate-200 hover:bg-slate-700"
+          >
+            Back to Dashboard
           </button>
         </div>
       )}
@@ -599,6 +655,12 @@ export default function Test({ course = sampleCourse, onComplete }) {
             className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
           >
             Try Another Topic
+          </button>
+          <button
+            onClick={() => onNavigate("Dashboard")}
+            className="w-full rounded-lg bg-slate-800 px-4 py-3 font-semibold text-slate-200 hover:bg-slate-700"
+          >
+            Back to Dashboard
           </button>
         </div>
       )}

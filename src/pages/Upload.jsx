@@ -55,10 +55,12 @@ function sparkyFor(course, event) {
   return { mood: "happy", message: `Great, ${course.name}! Pick any option below to fill it in.` };
 }
 
-export default function Upload() {
+// Props: initialCourseId (open an existing course, e.g. from the Dashboard's "Add slides"),
+//        onNavigate(page) to move to another page.
+export default function Upload({ initialCourseId, onNavigate = () => {} }) {
   const [courses, setCourses] = useState(() => loadState().courses);
-  const [courseName, setCourseName] = useState("");
-  const [open, setOpen] = useState(null);
+  const [courseName, setCourseName] = useState(() => courses.find((c) => c.id === initialCourseId)?.name ?? "");
+  const [open, setOpen] = useState(initialCourseId ? "pdf" : null);
   const [busy, setBusy] = useState("");
   const [event, setEvent] = useState(null);
   const [sampleWarning, setSampleWarning] = useState(false);
@@ -165,6 +167,16 @@ export default function Upload() {
       )}
 
       {course && (saved || open === "manual") && <CourseEditor course={course} onChange={update} manualOpen={open === "manual"} />}
+
+      {saved && (saved.weights.length > 0 || saved.topics.length > 0) && (
+        <button
+          type="button"
+          onClick={() => onNavigate("Dashboard")}
+          className="w-full rounded-xl bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
+        >
+          Done, go to my Dashboard
+        </button>
+      )}
     </section>
   );
 }

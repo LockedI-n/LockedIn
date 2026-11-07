@@ -187,6 +187,27 @@ export function recordTestResult(state, { habitId, score }) {
   };
 }
 
+// A test finished on ANY topic (the Test page lets students pick a different topic
+// than today's habit). Saves the topic's latest score, and counts it toward today's
+// habit for that course: the habit keeps its best score of the day.
+export function recordTopicScore(state, { courseId, topic, score, date = todayISO() }) {
+  if (typeof score !== "number") return state;
+  const habit = state.habits.find((h) => h.courseId === courseId && h.date === date);
+  return {
+    ...state,
+    courses: state.courses.map((c) =>
+        c.id === courseId
+            ? { ...c, topics: (c.topics ?? []).map((t) => (t.name === topic ? { ...t, score } : t)) }
+            : c
+    ),
+    habits: state.habits.map((h) =>
+        habit && h.id === habit.id
+            ? { ...h, studied: true, tested: true, score: h.tested ? Math.max(h.score ?? 0, score) : score }
+            : h
+    ),
+  };
+}
+
 // Add a course, or replace one with the same id (Upload.jsx calls this).
 // When replacing, topics that already have a score keep it (matched by name),
 // so re-uploading slides doesn't wipe progress.
