@@ -13,7 +13,7 @@ Update this table as things change. Status options: Stub (sample only), Working,
 | Endpoint | Status | Tested with real key? | Notes |
 | --- | --- | --- | --- |
 | `/api/syllabus` | Working | Yes (sample text) | Weights, dates, topics correct; unknown dates stay null |
-| `/api/slides` | Working | Yes (lecture text) | Good per-topic summaries, nothing invented. Images not tested yet |
+| `/api/slides` | Working | Yes (real CMPT 455 PDF) | Optional `topics` list: summaries come back under the course's exact topic names. Images not tested yet |
 | `/api/quiz` | Working | Yes | Drops questions without exactly 4 options |
 | `/api/grade` | Working | Yes | Fair scores (good answer 75-80, wrong answer 0-5). Sparky asks a follow-up in Feynman mode |
 
@@ -39,6 +39,7 @@ Write down every prompt change and why, so we can undo it if results get worse.
 | --- | --- | --- | --- | --- |
 | 0 | all | First versions written | Starter setup | Not tested yet |
 | 1 | all | Model `gemini-2.5-flash` to `gemini-3.8-flash`; retry up to 3 times on 503/429 | 2.5 is closed to new keys; Gemini often says "high demand" | Better: real responses now |
+| 2 | slides | Optional `topics` input; summaries use those exact names. Summaries written as neutral notes | Slide summaries didn't match syllabus topic names; Sparky's "Hey there!" leaked into notes | Better: both topics matched exactly |
 | 1 | all | Model list: `gemini-3.6-flash`, then `3.5-flash`, then `3.5-flash-lite`. Busy model moves to the next one | `gemini-3.8-flash` took 130-210 s per call | Much better: 6-15 s per call |
 
 ---
@@ -54,6 +55,8 @@ Inputs I tried and what came back. Use real syllabi and slides from our own cour
 | 1 | slides | 5 slides of clustering text | 4 accurate topics | Took 199 s on 3.8-flash (fixed by model list) |
 | 1 | grade | Feynman, decent k-means answer | 80, missed "how to choose k" | Took 141 s on 3.8-flash (fixed) |
 | 1 | grade | Written, wrong answer ("supervised") | 5, explained why | None |
+| 2 | syllabus | Real CMPT 455 Introduction.pdf (29 pages, pdf.js text) | All 5 weights (sum 100%), 8 outline topics, no dates invented | None |
+| 2 | slides | Same PDF with the 8 syllabus topic names | 2 summaries, both under exact syllabus names | None |
 | 1 | syllabus | Dates with no year ("Oct 21") | Dates came back null | Correct, it does not guess the year. Real syllabi usually say the term |
 
 ---

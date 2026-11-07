@@ -22,9 +22,10 @@ export function parseSyllabus({ courseName, text, fileBase64, mimeType }) {
   return post("/api/syllabus", { courseName, text, fileBase64, mimeType });
 }
 
-// { courseName, text?, images?: [{ data, mimeType }] } -> { topics: [{ name, summary }] }
-export function summarizeSlides({ courseName, text, images }) {
-  return post("/api/slides", { courseName, text, images });
+// { courseName, text?, images?: [{ data, mimeType }], topics?: [string] } -> { topics: [{ name, summary }] }
+// Pass `topics` (the course's topic names) so summaries come back under those exact names.
+export function summarizeSlides({ courseName, text, images, topics }) {
+  return post("/api/slides", { courseName, text, images, topics });
 }
 
 // { courseName, topic, summary, count? } -> { quiz: [...] }
