@@ -1,8 +1,8 @@
-# Study Sidekick (Streakly)
+# Study Sidekick (LockedIn)
 
 > *"Meet Sparky, your study sidekick. It reads your syllabus and slides, tells you what to study today, and then makes you prove it."*
 
-Study Sidekick is a study companion for university students, built for the "Digital Sidekick" hackathon theme. A student adds a course and uploads the syllabus, and Gemini pulls out the grading weights, assessment dates, and topics. The student uploads lecture slides or images and gets a short summary per topic. The sidekick sets a daily study habit for each course. After studying, the student proves it with an MCQ quiz, a written answer, or the Feynman method (teaching the sidekick). Progress shows as a daily ring (studied = 50%, passed a test = 100%) and a course mastery bar weighted by grading weight. Low scores turn into tomorrow's habits. All data lives in localStorage. No database, no external course API.
+LockedIn is a study companion for university students, built for the "Digital Sidekick" hackathon theme. A student adds a course and uploads the syllabus, and Gemini pulls out the grading weights, assessment dates, and topics. The student uploads lecture slides or images and gets a short summary per topic. The sidekick sets a daily study habit for each course. After studying, the student proves it with an MCQ quiz, a written answer, or the Feynman method (teaching the sidekick). Progress shows as a daily ring (studied = 50%, passed a test = 100%) and a course mastery bar weighted by grading weight. Low scores turn into tomorrow's habits. All data lives in localStorage. No database, no external course API.
 
 The sidekick's name lives in `src/lib/config.js` (`SIDEKICK_NAME`) and `api/_gemini.js`. Change both if we rename it.
 
