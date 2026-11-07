@@ -1,4 +1,3 @@
-jsx
 import { useEffect, useRef, useState } from "react";
 import { getQuiz, gradeAnswer } from "../lib/api.js";
 import { sampleCourse } from "../lib/sampleData.js";
