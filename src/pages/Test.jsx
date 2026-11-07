@@ -166,7 +166,7 @@ export default function Test({ course = sampleCourse, onComplete }) {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Knowledge Check</h2>
+        <h2 className="text-2xl font-bold">TEST PAGE UPDATED</h2>
         <p className="mt-1 text-sm text-slate-400">
           Test what you've learned with Sparky.
         </p>
