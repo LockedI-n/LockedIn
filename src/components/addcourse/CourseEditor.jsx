@@ -15,7 +15,16 @@ export default function CourseEditor({ course, onChange, manualOpen }) {
   const [topic, setTopic] = useState("");
 
   const total = totalPercent(course);
-  const weights = [...course.weights].sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+  // Show items in groups ("Course project: 40%" with its parts), groups and loose items by date.
+  const byDate = (a, b) => (a.date || "9999").localeCompare(b.date || "9999");
+  const sections = [];
+  for (const w of [...course.weights].sort(byDate)) {
+    const name = w.group && w.group !== w.item ? w.group : null;
+    const existing = name && sections.find((s) => s.name === name);
+    if (existing) existing.items.push(w);
+    else sections.push({ name, items: [w] });
+  }
+  const weights = course.weights;
 
   const setWeight = (name, patch) =>
     onChange({ ...course, weights: course.weights.map((w) => (w.item === name ? { ...w, ...patch } : w)) }, "edit");
@@ -55,37 +64,50 @@ export default function CourseEditor({ course, onChange, manualOpen }) {
       <section className="space-y-2">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-ink/60">Grading and deadlines</h4>
         {weights.length === 0 && <p className="text-sm text-ink/50">Nothing yet. Use any option above, or add items by hand.</p>}
-        <ul className="divide-y divide-line">
-          {weights.map((w) => (
-            <li key={w.item} className="flex flex-wrap items-center gap-2 py-2">
-              <span className="min-w-0 flex-1 text-sm">
-                {w.item}
-                {w.group && w.group !== w.item && <span className="ml-1 text-xs text-ink/50">({w.group})</span>}
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={w.percent}
-                onChange={(e) => setWeight(w.item, { percent: Number(e.target.value) || 0 })}
-                aria-label={`${w.item} percent`}
-                className={`${input} w-20 text-right`}
-              />
-              <span className="text-sm text-ink/50">%</span>
-              <input
-                type="date"
-                value={w.date || ""}
-                onChange={(e) => setWeight(w.item, { date: e.target.value || null })}
-                aria-label={`${w.item} due date`}
-                className={`${input} ${w.date ? "" : "ring-1 ring-coral"}`}
-              />
-              <button type="button" onClick={() => removeWeight(w.item)} aria-label={`Remove ${w.item}`} className="px-1 text-ink/50 hover:text-danger-dark">
-                ✕
-              </button>
-            </li>
+        <div className="space-y-3">
+          {sections.map((sec, i) => (
+            <div key={sec.name ?? `loose-${i}`} className={sec.name ? "rounded-xl bg-canvas px-3 pt-2 ring-1 ring-line" : ""}>
+              {sec.name && (
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>{sec.name}</span>
+                  <span className="text-ink/60">
+                    {Math.round(sec.items.reduce((s, w) => s + (Number(w.percent) || 0), 0) * 10) / 10}% total
+                  </span>
+                </div>
+              )}
+              <ul className="divide-y divide-line">
+                {sec.items.map((w) => (
+                <li key={w.item} className="flex flex-wrap items-center gap-2 py-2">
+                  <span className="min-w-0 flex-1 text-sm">
+                    {w.item}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={w.percent}
+                    onChange={(e) => setWeight(w.item, { percent: Number(e.target.value) || 0 })}
+                    aria-label={`${w.item} percent`}
+                    className={`${input} w-20 text-right`}
+                  />
+                  <span className="text-sm text-ink/50">%</span>
+                  <input
+                    type="date"
+                    value={w.date || ""}
+                    onChange={(e) => setWeight(w.item, { date: e.target.value || null })}
+                    aria-label={`${w.item} due date`}
+                    className={`${input} ${w.date ? "" : "ring-1 ring-coral"}`}
+                  />
+                  <button type="button" onClick={() => removeWeight(w.item)} aria-label={`Remove ${w.item}`} className="px-1 text-ink/50 hover:text-danger-dark">
+                    ✕
+                  </button>
+                </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
         {manualOpen && (
           <form onSubmit={addWeight} className="flex flex-wrap items-center gap-2 rounded-lg bg-mist p-2">
             <input value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. Midterm" aria-label="Item name" className={`${input} min-w-0 flex-1`} />

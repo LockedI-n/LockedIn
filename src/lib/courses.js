@@ -47,7 +47,24 @@ export function mergeWeights(oldWeights = [], incoming = []) {
       });
     }
   }
-  return merged;
+  return foldGroupTotals(merged);
+}
+
+// Some sources give a total ("Project 40%"), others give its parts
+// ("Project proposal 10%", "Report 20%", ... all in group "Course project").
+// When a total's name matches a group and the group's parts add up to it,
+// keep the parts and drop the total, so nothing is counted twice.
+export function foldGroupTotals(weights = []) {
+  const near = (a, b) => Math.abs(a - b) <= 1;
+  return weights.filter((total) => {
+    const k = itemKey(total.item);
+    if (!k) return true;
+    const parts = weights.filter(
+      (w) => w !== total && w.group && (itemKey(w.group).includes(k) || k.includes(itemKey(w.group)))
+    );
+    const sum = parts.reduce((s, w) => s + (Number(w.percent) || 0), 0);
+    return !(parts.length >= 2 && near(sum, Number(total.percent) || 0));
+  });
 }
 
 // Combine topic lists by name. Keeps summaries and scores already saved.
