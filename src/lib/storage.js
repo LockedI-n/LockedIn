@@ -11,6 +11,7 @@
 //        updateState((s) => recordTestResult(s, { habitId, score }));
 
 import * as config from "./config.js";
+import { weakTopicsByImpact } from "./mastery.js";
 
 const STORAGE_KEY = config.STORAGE_KEY ?? "study-sidekick";
 const MASTERY = config.MASTERY_THRESHOLD ?? 70;
@@ -103,7 +104,7 @@ export function pickTopic(course, habits = []) {
   const topics = course.topics ?? [];
   if (!topics.length) return null;
 
-  const weak = weakTopics(course);
+  const weak = weakTopicsByImpact(course); // most damaging to the grade first
   if (weak.length) return weak[0].name;
 
   const seen = new Set(
@@ -183,6 +184,27 @@ export function recordTestResult(state, { habitId, score }) {
               ),
             }
             : c
+    ),
+  };
+}
+
+// A test finished on ANY topic (the Test page lets students pick a different topic
+// than today's habit). Saves the topic's latest score, and counts it toward today's
+// habit for that course: the habit keeps its best score of the day.
+export function recordTopicScore(state, { courseId, topic, score, date = todayISO() }) {
+  if (typeof score !== "number") return state;
+  const habit = state.habits.find((h) => h.courseId === courseId && h.date === date);
+  return {
+    ...state,
+    courses: state.courses.map((c) =>
+        c.id === courseId
+            ? { ...c, topics: (c.topics ?? []).map((t) => (t.name === topic ? { ...t, score } : t)) }
+            : c
+    ),
+    habits: state.habits.map((h) =>
+        habit && h.id === habit.id
+            ? { ...h, studied: true, tested: true, score: h.tested ? Math.max(h.score ?? 0, score) : score }
+            : h
     ),
   };
 }

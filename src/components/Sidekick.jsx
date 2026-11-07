@@ -12,11 +12,25 @@ import { SIDEKICK_NAME } from "../lib/config.js";
 //   size     character width in px. Default: 72 with a message, otherwise it
 //            fills its container.
 //
-// Art: until real images exist, each mood is drawn as an SVG below. To use your
-// own art, drop files named after the mood into src/assets/sidekick/, for
-// example happy.png, proud.svg, nudge.webp. A matching file wins over the SVG.
+// Art: src/assets/sidekick/mascot.svg is our mascot and is used for every mood.
+// Moods show through movement (bounce, jump, wiggle, tilt). To give a mood its
+// own pose, drop a file named after it into src/assets/sidekick/ (happy.png,
+// proud.svg, ...). If there are no images at all, the drawn SVG below is used.
 
 const MOODS = ["idle", "happy", "proud", "nudge", "thinking"];
+
+// How the mascot moves in each mood (loops forever, paused for reduced motion).
+const loop = (duration, extra = {}) => ({ duration, repeat: Infinity, ease: "easeInOut", ...extra });
+const MOTION = {
+    idle: { animate: { y: [0, -4, 0] }, transition: { y: loop(3.2) } },
+    happy: { animate: { y: [0, -8, 0] }, transition: { y: loop(1.4) } },
+    proud: {
+        animate: { y: [0, -16, 0, 0], rotate: [0, -6, 6, 0] },
+        transition: { y: loop(1.6, { times: [0, 0.3, 0.6, 1] }), rotate: loop(1.6) },
+    },
+    nudge: { animate: { rotate: [0, -8, 8, -8, 0, 0] }, transition: { rotate: loop(2, { times: [0, 0.1, 0.2, 0.3, 0.4, 1] }) } },
+    thinking: { animate: { rotate: [0, -5, -5, 0], y: [0, -2, 0] }, transition: { rotate: loop(3), y: loop(3) } },
+};
 
 const images = import.meta.glob("../assets/sidekick/*.{png,svg,webp,jpg,jpeg}", {
     eager: true,
@@ -131,7 +145,7 @@ export default function Sidekick({ message, mood = "happy", size }) {
     const safeMood = MOODS.includes(mood) ? mood : "idle";
     const label = `${SIDEKICK_NAME} looks ${safeMood}`;
     const width = size ?? (message ? 72 : "100%");
-    const custom = imageByMood[safeMood];
+    const custom = imageByMood[safeMood] ?? imageByMood.mascot;
 
     const character = (
         <motion.div
@@ -140,14 +154,10 @@ export default function Sidekick({ message, mood = "happy", size }) {
             className="shrink-0"
             // Pop once when the mood changes, then a slow float.
             initial={reduceMotion ? false : { scale: 0.85, y: 6 }}
-            animate={
-                reduceMotion
-                    ? undefined
-                    : { scale: 1, y: [0, -4, 0] }
-            }
+            animate={reduceMotion ? undefined : { scale: 1, ...MOTION[safeMood].animate }}
             transition={{
                 scale: { type: "spring", stiffness: 300, damping: 14 },
-                y: { duration: 3.2, repeat: Infinity, ease: "easeInOut" },
+                ...MOTION[safeMood].transition,
             }}
         >
             {custom ? (
@@ -166,11 +176,11 @@ export default function Sidekick({ message, mood = "happy", size }) {
             <div
                 role="status"
                 aria-live="polite"
-                className="relative rounded-2xl bg-white px-4 py-3 text-sm font-medium text-[#1B1740] shadow-sm ring-1 ring-[#1B1740]/10"
+                className="relative rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink shadow-sm ring-1 ring-line"
             >
         <span
             aria-hidden="true"
-            className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-white ring-1 ring-[#1B1740]/10 [clip-path:polygon(0_0,0_100%,100%_100%)]"
+            className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-white ring-1 ring-line [clip-path:polygon(0_0,0_100%,100%_100%)]"
         />
                 {message}
             </div>

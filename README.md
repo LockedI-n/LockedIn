@@ -74,7 +74,9 @@ Everyone builds against these shapes. If you need to change one, tell the team f
 {
   id: "cmpt459",
   name: "CMPT 459",
-  weights: [{ item: "Final", percent: 40, date: "2026-12-10" }],  // date may be null
+  weights: [{ item: "Final", percent: 40, date: "2026-12-10", covers: null }],  // date may be null
+  // covers (optional): topic names this item tests, e.g. ["Clustering"]. null = unknown, so it counts for all topics.
+  // Mastery is weighted by this: see src/lib/mastery.js.
   topics: [{ name: "Decision Trees", week: 5, summary: "", score: null }]
 }
 

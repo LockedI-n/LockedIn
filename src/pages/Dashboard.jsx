@@ -5,6 +5,7 @@ import Sidekick from "../components/Sidekick";
 import ProgressRing from "../components/ProgressRing";
 import MasteryBar from "../components/MasteryBar";
 import HabitCard from "../components/HabitCard";
+import { courseMastery, weakTopicsByImpact } from "../lib/mastery";
 
 const SIDEKICK_NAME = config.SIDEKICK_NAME ?? "Sparky";
 const MASTERY = config.MASTERY_THRESHOLD ?? 70;
@@ -32,13 +33,7 @@ function daysUntil(iso) {
 const habitProgress = (h) =>
     h.tested && (h.score ?? 0) >= MASTERY ? 100 : h.studied ? 50 : 0;
 
-// Course mastery = average topic score, unscored topics count as 0.
-// If the team decides on a different weighting by grading weight, change it here only.
-function courseMastery(course) {
-    if (!course.topics?.length) return 0;
-    const total = course.topics.reduce((sum, t) => sum + (t.score ?? 0), 0);
-    return Math.round(total / course.topics.length);
-}
+// Course mastery is weighted by grading weight: see src/lib/mastery.js.
 
 const weakTopics = (course) =>
     (course.topics ?? [])
@@ -69,7 +64,8 @@ function pickTopic(course, habits) {
     const topics = course.topics ?? [];
     if (!topics.length) return null;
 
-    const weak = weakTopics(course);
+    // Weak topics: the one hurting the grade most comes first.
+    const weak = weakTopicsByImpact(course);
     if (weak.length) return weak[0].name;
 
     const seen = new Set(
@@ -206,15 +202,15 @@ export default function Dashboard({ onNavigate = () => {} }) {
     });
 
     return (
-        <main className="min-h-screen bg-[#EEF0FF] text-[#1B1740]">
-            <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+        <main className="text-ink">
+            <div>
                 {/* Top bar */}
                 <header className="flex items-center justify-between gap-4">
-                    <p className="text-sm font-medium text-[#1B1740]/70">{dateLabel}</p>
+                    <p className="text-sm font-medium text-ink/70">{dateLabel}</p>
                     <button
                         type="button"
                         onClick={() => onNavigate("upload")}
-                        className="rounded-full bg-[#1B1740] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2c2670] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B1740]"
+                        className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
                         Add course
                     </button>
@@ -223,7 +219,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 {/* Sidekick + daily ring */}
                 <section
                     aria-label="Today's progress"
-                    className="mt-6 grid items-center gap-6 rounded-[2rem] bg-[#1B1740] p-6 text-white sm:grid-cols-[1fr_auto] sm:p-8"
+                    className="mt-6 grid items-center gap-6 rounded-[2rem] bg-teal p-6 text-ink sm:grid-cols-[1fr_auto] sm:p-8"
                 >
                     <div className="flex items-center gap-5">
                         <div className="w-24 shrink-0 sm:w-32">
@@ -233,7 +229,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                             <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
                                 {message}
                             </h1>
-                            <p className="mt-2 text-sm text-white/70">
+                            <p className="mt-2 text-sm text-ink/70">
                                 {streak > 0
                                     ? `${streak}-day streak`
                                     : "No streak yet. Studying today starts one."}
@@ -243,7 +239,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
 
                     <div className="mx-auto flex flex-col items-center gap-2">
                         <ProgressRing value={dailyPct} size={132} />
-                        <p className="text-xs text-white/70">
+                        <p className="text-xs text-ink/70">
                             Studied counts 50%. Passing a test counts 100%.
                         </p>
                     </div>
@@ -259,6 +255,13 @@ export default function Dashboard({ onNavigate = () => {} }) {
                                 Study today
                             </h2>
                             <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                                {state.courses
+                                    .filter((c) => !c.topics?.length)
+                                    .map((c) => (
+                                        <li key={`needs-${c.id}`}>
+                                            <NeedsTopicsCard course={c} onAdd={() => onNavigate("upload", { courseId: c.id })} />
+                                        </li>
+                                    ))}
                                 {todays.map((habit) => (
                                     <li key={habit.id}>
                                         <HabitCard
@@ -303,18 +306,18 @@ export default function Dashboard({ onNavigate = () => {} }) {
 
 function CourseCard({ course, onAddSlides }) {
     const mastery = courseMastery(course);
-    const weak = weakTopics(course).slice(0, 3);
+    const weak = weakTopicsByImpact(course).slice(0, 3);
     const next = nextAssessment(course);
     const left = next ? daysUntil(next.date) : null;
 
     return (
-        <article className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-[#1B1740]/10">
+        <article className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-line">
             <div className="flex items-start justify-between gap-3">
                 <h3 className="text-lg font-bold">{course.name}</h3>
                 <button
                     type="button"
                     onClick={onAddSlides}
-                    className="shrink-0 rounded-full px-3 py-1 text-sm font-semibold text-[#4B3FD1] ring-1 ring-[#4B3FD1]/30 transition hover:bg-[#4B3FD1]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4B3FD1]"
+                    className="shrink-0 rounded-full px-3 py-1 text-sm font-semibold text-navy ring-1 ring-navy/30 transition hover:bg-navy/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
                 >
                     Add slides
                 </button>
@@ -322,7 +325,7 @@ function CourseCard({ course, onAddSlides }) {
 
             <div className="mt-4">
                 <MasteryBar value={mastery} label={`${course.name} mastery`} />
-                <p className="mt-1 text-sm text-[#1B1740]/70">{mastery}% mastery</p>
+                <p className="mt-1 text-sm text-ink/70">{mastery}% mastery</p>
             </div>
 
             {next && (
@@ -340,7 +343,7 @@ function CourseCard({ course, onAddSlides }) {
                         {weak.map((t) => (
                             <li
                                 key={t.name}
-                                className="rounded-full bg-[#FFE8D6] px-3 py-1 text-sm text-[#8A3B00]"
+                                className="rounded-full bg-coral/20 px-3 py-1 text-sm text-danger-dark"
                             >
                                 {t.name} · {t.score}%
                             </li>
@@ -348,7 +351,7 @@ function CourseCard({ course, onAddSlides }) {
                     </ul>
                 </div>
             ) : (
-                <p className="mt-4 text-sm text-[#1B1740]/70">
+                <p className="mt-4 text-sm text-ink/70">
                     {course.topics?.some((t) => t.score != null)
                         ? `No topics under ${MASTERY}%.`
                         : "No test scores yet. Take a test to see where you stand."}
@@ -358,18 +361,41 @@ function CourseCard({ course, onAddSlides }) {
     );
 }
 
+// A course with deadlines (e.g. from Canvas) but no topics yet, so there's nothing to study or test.
+function NeedsTopicsCard({ course, onAdd }) {
+    return (
+        <article className="flex h-full flex-col justify-between gap-4 rounded-3xl bg-cream p-5 ring-1 ring-line">
+            <div>
+                <p className="text-sm font-medium text-ink/70">{course.name}</p>
+                <h3 className="mt-1 text-lg font-bold">Add your topics</h3>
+                <p className="mt-1 text-sm text-ink/70">
+                    I have your deadlines, but not what's taught each week. Upload the syllabus or lecture slides
+                    and I'll plan your study days.
+                </p>
+            </div>
+            <button
+                type="button"
+                onClick={onAdd}
+                className="self-start rounded-full bg-brand px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-dark"
+            >
+                Upload syllabus or slides
+            </button>
+        </article>
+    );
+}
+
 function EmptyState({ onAdd }) {
     return (
-        <section className="mt-10 rounded-3xl bg-white p-8 text-center ring-1 ring-[#1B1740]/10">
+        <section className="mt-10 rounded-3xl bg-white p-8 text-center ring-1 ring-line">
             <h2 className="text-xl font-bold">No courses yet</h2>
-            <p className="mx-auto mt-2 max-w-sm text-[#1B1740]/70">
+            <p className="mx-auto mt-2 max-w-sm text-ink/70">
                 Upload a syllabus and I'll pull out your grading weights, dates, and
                 topics.
             </p>
             <button
                 type="button"
                 onClick={onAdd}
-                className="mt-5 rounded-full bg-[#FFD23F] px-5 py-2.5 font-bold text-[#1B1740] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B1740]"
+                className="mt-5 rounded-full bg-brand px-5 py-2.5 font-bold text-white transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
                 Add your first course
             </button>

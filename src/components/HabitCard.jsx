@@ -19,16 +19,16 @@ function getStatus(habit) {
 }
 
 const STATUS = {
-    todo: { label: "Not started", badge: "bg-[#1B1740]/10 text-[#1B1740]" },
-    studied: { label: "Studied · 50%", badge: "bg-[#FFD23F]/60 text-[#5C4600]" },
-    retry: { label: "Needs another try", badge: "bg-[#FFE8D6] text-[#8A3B00]" },
-    passed: { label: "Passed · 100%", badge: "bg-[#D9F5E3] text-[#12633A]" },
+    todo: { label: "Not started", badge: "bg-ink/10 text-ink" },
+    studied: { label: "Studied · 50%", badge: "bg-teal/60 text-ink" },
+    retry: { label: "Needs another try", badge: "bg-coral/20 text-danger-dark" },
+    passed: { label: "Passed · 100%", badge: "bg-brand/15 text-brand-dark" },
 };
 
 const primaryBtn =
-    "rounded-full bg-[#FFD23F] px-4 py-2 text-sm font-bold text-[#1B1740] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B1740]";
+    "rounded-full bg-brand px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 const secondaryBtn =
-    "rounded-full px-4 py-2 text-sm font-semibold text-[#4B3FD1] ring-1 ring-[#4B3FD1]/30 transition hover:bg-[#4B3FD1]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4B3FD1]";
+    "rounded-full px-4 py-2 text-sm font-semibold text-navy ring-1 ring-navy/30 transition hover:bg-navy/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 
 export default function HabitCard({
                                       habit,
@@ -42,10 +42,10 @@ export default function HabitCard({
     const { label, badge } = STATUS[status];
 
     return (
-        <article className="flex h-full flex-col justify-between gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-[#1B1740]/10">
+        <article className="flex h-full flex-col justify-between gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-line">
             <div>
                 <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-medium text-[#1B1740]/70">
+                    <p className="text-sm font-medium text-ink/70">
                         {course?.name ?? habit.courseId}
                     </p>
                     <span
@@ -56,7 +56,7 @@ export default function HabitCard({
                 </div>
                 <h3 className="mt-2 text-lg font-bold leading-snug">{habit.topic}</h3>
                 {habit.tested && (
-                    <p className="mt-1 text-sm text-[#1B1740]/70">
+                    <p className="mt-1 text-sm text-ink/70">
                         Score: {habit.score}%
                         {status === "retry" && ` (pass mark is ${MASTERY}%)`}
                     </p>
@@ -69,9 +69,9 @@ export default function HabitCard({
                         <button type="button" onClick={onMarkStudied} className={primaryBtn}>
                             I studied
                         </button>
-                        <span className="text-sm text-[#1B1740]/60">
-              Then prove it with a test.
-            </span>
+                        <button type="button" onClick={onTakeTest} className={secondaryBtn}>
+                            Test me now
+                        </button>
                     </>
                 )}
 
@@ -89,7 +89,7 @@ export default function HabitCard({
 
                 {status === "passed" && (
                     <>
-            <span className="text-sm font-semibold text-[#12633A]">
+            <span className="text-sm font-semibold text-brand-dark">
               Done for today.
             </span>
                         <button type="button" onClick={onTakeTest} className={secondaryBtn}>
