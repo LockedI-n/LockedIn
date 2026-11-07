@@ -12,9 +12,9 @@ Update this table as things change. Status options: Stub (sample only), Working,
 
 | Endpoint | Status | Tested with real key? | Notes |
 | --- | --- | --- | --- |
-| `/api/syllabus` | Stub | No | Prompt written, untested |
+| `/api/syllabus` | Working | Yes (sample text) | Weights, dates, topics correct; unknown dates stay null |
 | `/api/slides` | Stub | No | Prompt written, untested |
-| `/api/quiz` | Stub | No | Drops questions without exactly 4 options |
+| `/api/quiz` | Working | Yes | Drops questions without exactly 4 options |
 | `/api/grade` | Stub | No | Feynman and written modes, score kept between 0 and 100 |
 
 ---
@@ -38,6 +38,7 @@ Write down every prompt change and why, so we can undo it if results get worse.
 | Hour | Endpoint | What I changed | Why | Better or worse? |
 | --- | --- | --- | --- | --- |
 | 0 | all | First versions written | Starter setup | Not tested yet |
+| 1 | all | Model `gemini-2.5-flash` to `gemini-3.8-flash`; retry up to 3 times on 503/429 | 2.5 is closed to new keys; Gemini often says "high demand" | Better: real responses now |
 
 ---
 
@@ -47,7 +48,8 @@ Inputs I tried and what came back. Use real syllabi and slides from our own cour
 
 | Hour | Endpoint | Input (file or short description) | Result | Problem? |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| 1 | quiz | Decision trees, short summary, count 2 | 2 good on-topic MCQs | First try got 503 (high demand) |
+| 1 | syllabus | Made-up CMPT 459 syllabus text | All 4 weights, 2 dates, 5 topics correct; final date null | None. Still need a real syllabus PDF |
 
 ---
 
@@ -68,7 +70,10 @@ Ideas and examples of good or bad sidekick messages:
 ## Known issues and risks
 
 - Vercel request body limit is about 4.5 MB. Large PDFs or many slide images may fail. Option: send pages in batches, or send text from pdf.js instead of the file.
-- Model name `gemini-2.5-flash` in `api/_gemini.js`. Check AI Studio for the latest Flash model.
+- Model is `gemini-3.8-flash` in `api/_gemini.js`. `gemini-2.5-flash` returns 404 for new keys.
+- Gemini often returns 503 "high demand". `askJSON` retries 3 times, then the endpoint falls back to sample data.
+- `vercel dev` does not pass `.env.local` to the API functions. Start it with: `set -a; source .env.local; set +a; npx vercel dev`
+- Global `npm i -g vercel` fails on my Mac (permissions). Use `npx vercel ...` instead.
 - Free tier rate limits. If we hit them during the demo, fallbacks kick in (check for `fallback: true`).
 -
 
@@ -87,8 +92,9 @@ Things I decided and why, so I can explain them in the pitch or to judges.
 
 ## TODO
 
-- [ ] Get a Gemini key and add it to `.env.local`
-- [ ] Run `vercel dev` and test each endpoint with a real key
+- [x] Get a Gemini key and add it to `.env.local`
+- [x] Link Vercel project `lockedin` (live: https://lockedin-seven-xi.vercel.app)
+- [ ] Test `/api/slides` and `/api/grade` with a real key
 - [ ] Test `/api/syllabus` with 2 or 3 real syllabi (Hour 3 checkpoint)
 - [ ] Test `/api/slides` with real lecture slides
 - [ ] Make quiz questions match the topic summary closely
