@@ -45,7 +45,9 @@ function sparkyFor(course, event) {
     default:
       break;
   }
-  if (course.weights.length && Math.abs(total - 100) > 1)
+  if (course.weights.length && total > 101)
+    return { mood: "nudge", message: `Your grades add up to ${total}%. Something might be counted twice. Remove the extra item below.` };
+  if (course.weights.length && total < 99)
     return { mood: "nudge", message: `Your grades add up to ${total}%. Is something missing, like a midterm or final? Add it by hand.` };
   if (missingDates)
     return { mood: "nudge", message: `${missingDates} item${missingDates === 1 ? " has" : "s have"} no due date. Add ${missingDates === 1 ? "it" : "them"} so I can remind you!` };
