@@ -255,6 +255,13 @@ export default function Dashboard({ onNavigate = () => {} }) {
                                 Study today
                             </h2>
                             <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                                {state.courses
+                                    .filter((c) => !c.topics?.length)
+                                    .map((c) => (
+                                        <li key={`needs-${c.id}`}>
+                                            <NeedsTopicsCard course={c} onAdd={() => onNavigate("upload", { courseId: c.id })} />
+                                        </li>
+                                    ))}
                                 {todays.map((habit) => (
                                     <li key={habit.id}>
                                         <HabitCard
@@ -350,6 +357,29 @@ function CourseCard({ course, onAddSlides }) {
                         : "No test scores yet. Take a test to see where you stand."}
                 </p>
             )}
+        </article>
+    );
+}
+
+// A course with deadlines (e.g. from Canvas) but no topics yet, so there's nothing to study or test.
+function NeedsTopicsCard({ course, onAdd }) {
+    return (
+        <article className="flex h-full flex-col justify-between gap-4 rounded-3xl bg-cream p-5 ring-1 ring-line">
+            <div>
+                <p className="text-sm font-medium text-ink/70">{course.name}</p>
+                <h3 className="mt-1 text-lg font-bold">Add your topics</h3>
+                <p className="mt-1 text-sm text-ink/70">
+                    I have your deadlines, but not what's taught each week. Upload the syllabus or lecture slides
+                    and I'll plan your study days.
+                </p>
+            </div>
+            <button
+                type="button"
+                onClick={onAdd}
+                className="self-start rounded-full bg-brand px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-dark"
+            >
+                Upload syllabus or slides
+            </button>
         </article>
     );
 }

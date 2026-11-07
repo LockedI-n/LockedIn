@@ -92,7 +92,7 @@ export default function CourseEditor({ course, onChange, manualOpen }) {
             <input type="number" min="0" max="100" step="0.1" value={percent} onChange={(e) => setPercent(e.target.value)} placeholder="%" aria-label="Percent" className={`${input} w-20`} />
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Due date" className={input} />
             <button type="submit" className="rounded-md bg-brand px-3 py-1 text-sm font-semibold text-white hover:bg-brand-dark">
-              Add
+              Add item
             </button>
           </form>
         )}

@@ -14,7 +14,9 @@ const defaultTopic = (course, wanted) =>
   course?.topics[0]?.name ??
   "";
 
-const MODE_LABELS = { mcq: "Multiple choice", written: "Written answer", feynman: "Teach Sparky" };
+// Two ways to prove it: answer questions, or explain what you understood in your own words.
+// "feynman" grading: Sparky reacts like a friend you're teaching (see api/grade.js).
+const MODE_LABELS = { mcq: "Multiple choice", feynman: "Explain what you understood" };
 
 // Props (App.jsx passes these):
 //   courses          saved courses (from storage)
@@ -205,7 +207,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       : loading || grading
         ? { mood: "thinking", message: loading ? "Writing your questions..." : "Reading your answer carefully..." }
         : mode === "feynman"
-          ? { mood: "happy", message: `Teach me ${topicName || "this topic"} like I've never heard of it. I'll ask about anything confusing!` }
+          ? { mood: "happy", message: `Tell me what you understood about ${topicName || "this topic"}, in your own words. I'll ask about anything confusing!` }
           : { mood: "happy", message: "Prove what you know! Pick a topic and a way to be tested." };
 
   return (
@@ -217,7 +219,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
         <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
           <div>
             <p className="mb-2 text-sm font-medium">Choose a test mode</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {Object.entries(MODE_LABELS).map(([id, label]) => (
                 <button
                   key={id}
@@ -282,7 +284,21 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </select>
           </div>
 
-          {topic?.summary ? (
+          {course.topics.length === 0 && (
+            <div className="space-y-3 rounded-lg bg-cream p-4 ring-1 ring-line">
+              <p className="text-sm text-ink/80">
+                {course.name} has no topics yet, so there's nothing to test. Upload the syllabus or slides first.
+              </p>
+              <button
+                onClick={() => onNavigate("Add course", { courseId: course.id })}
+                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+              >
+                Add topics
+              </button>
+            </div>
+          )}
+
+          {course.topics.length === 0 ? null : topic?.summary ? (
             <div className="rounded-lg bg-mist p-4">
               <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-dark">
                 Topic summary
@@ -327,13 +343,13 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             <h3 className="mt-1 text-lg font-semibold">{topicName}</h3>
             <p className="mt-2 text-sm text-ink/60">
               {mode === "feynman"
-                ? `Teach ${SIDEKICK_NAME} this topic in simple words, as if they've never heard of it. Use an example. If you can explain it simply, you understand it.`
+                ? `Explain what you understood about this topic in your own words, as if you're teaching ${SIDEKICK_NAME} who has never heard of it. Use an example if you can. If you can explain it simply, you really get it.`
                 : "Explain this topic in your own words. Include the key ideas, how they work, and why they matter."}
             </p>
           </div>
 
           <label htmlFor="written-answer" className="block text-sm font-medium">
-            {mode === "feynman" ? `Your lesson for ${SIDEKICK_NAME}` : "Your explanation"}
+            {mode === "feynman" ? "What I understood" : "Your explanation"}
           </label>
           <textarea
             id="written-answer"
@@ -360,7 +376,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             disabled={grading || !writtenAnswer.trim()}
             className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {grading ? "Evaluating your explanation..." : mode === "feynman" ? `Teach ${SIDEKICK_NAME}` : "Submit for Evaluation"}
+            {grading ? `${SIDEKICK_NAME} is reading your explanation...` : "Check my understanding"}
           </button>
         </div>
       )}
@@ -404,7 +420,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           <div className="rounded-xl border border-line bg-white p-4">
-            <h3 className="mb-2 font-semibold text-brand-dark">What to improve</h3>
+            <h3 className="mb-2 font-semibold text-danger-dark">What to improve</h3>
             {gradeResult.missed?.length ? (
               <ul className="list-disc space-y-2 pl-5 text-sm text-ink/80">
                 {gradeResult.missed.map((item, index) => (

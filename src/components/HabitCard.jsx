@@ -69,9 +69,9 @@ export default function HabitCard({
                         <button type="button" onClick={onMarkStudied} className={primaryBtn}>
                             I studied
                         </button>
-                        <span className="text-sm text-ink/60">
-              Then prove it with a test.
-            </span>
+                        <button type="button" onClick={onTakeTest} className={secondaryBtn}>
+                            Test me now
+                        </button>
                     </>
                 )}
 

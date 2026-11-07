@@ -4,7 +4,7 @@
 // Every option fills in part of the same course and saves it right away
 // (with Sunny's upsertCourse), so the Dashboard and Test pages can use it.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Sidekick from "../components/Sidekick.jsx";
 import CanvasPanel from "../components/addcourse/CanvasPanel.jsx";
 import FilePanel from "../components/addcourse/FilePanel.jsx";
@@ -64,11 +64,29 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
   const [busy, setBusy] = useState("");
   const [event, setEvent] = useState(null);
   const [sampleWarning, setSampleWarning] = useState(false);
+  const [needName, setNeedName] = useState(false);
+  const nameRef = useRef(null);
 
   const name = courseName.trim();
   const saved = courses.find((c) => c.id === courseIdFor(name));
   const course = name ? (saved ?? emptyCourse(name)) : null;
-  const sparky = busy ? { mood: "thinking", message: busy } : sparkyFor(course, event);
+  const sparky = busy
+    ? { mood: "thinking", message: busy }
+    : needName && !name
+      ? { mood: "nudge", message: "First, type your course name in the box (like CMPT 455). Then pick how to add it!" }
+      : sparkyFor(course, event);
+
+  function pickOption(id) {
+    if (id !== "canvas" && !name) {
+      setNeedName(true);
+      setOpen(id);
+      nameRef.current?.focus();
+      return;
+    }
+    // Only close it if its panel was actually showing (it's hidden while the name is missing).
+    const showing = open === id && (id === "canvas" || name);
+    setOpen(showing ? null : id);
+  }
 
   // Save a new version of the course and remember why (for Sparky).
   function update(next, why) {
@@ -107,8 +125,9 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
       </div>
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-ink/80">Course name</span>
+        <span className="text-sm font-medium text-ink/80">1. Course name</span>
         <input
+          ref={nameRef}
           list="saved-courses"
           value={courseName}
           onChange={(e) => {
@@ -117,7 +136,9 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
           }}
           placeholder="e.g. CMPT 455 (or connect Canvas to fill this in)"
           disabled={!!busy}
-          className="w-full rounded-xl bg-mist px-4 py-3 text-ink placeholder-ink/40 outline-none focus:ring-2 focus:ring-brand"
+          className={`w-full rounded-xl bg-white px-4 py-3 text-ink placeholder-ink/40 outline-none ring-1 focus:ring-2 focus:ring-brand ${
+            needName && !name ? "ring-2 ring-coral" : "ring-line"
+          }`}
         />
         <datalist id="saved-courses">
           {courses.map((c) => (
@@ -126,20 +147,19 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
         </datalist>
       </label>
 
+      <div className="space-y-2">
+      <span className="text-sm font-medium text-ink/80">2. How do you want to add it? Pick one or more</span>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {OPTIONS.map((o) => {
-          const needsName = o.id !== "canvas" && !name;
           const active = open === o.id;
           return (
             <button
               key={o.id}
               type="button"
-              disabled={needsName}
-              onClick={() => setOpen(active ? null : o.id)}
-              title={needsName ? "Type a course name first" : undefined}
+              onClick={() => pickOption(o.id)}
               className={`rounded-2xl p-4 text-left transition ${
                 active ? "bg-brand text-white" : "bg-white ring-1 ring-line hover:ring-brand"
-              } disabled:cursor-not-allowed disabled:opacity-40`}
+              }`}
             >
               <div className="font-semibold">{o.title}</div>
               <div className={`mt-1 text-xs ${active ? "text-white/85" : "text-ink/60"}`}>{o.hint}</div>
@@ -147,8 +167,9 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
           );
         })}
       </div>
+      </div>
 
-      {open && (
+      {open && !(open !== "canvas" && !name) && (
         <div className="rounded-2xl bg-white p-4 ring-1 ring-line">
           {open === "canvas" && <CanvasPanel busy={busy} setBusy={setBusy} onImport={onCanvasImport} onError={onError} />}
           {(open === "pdf" || open === "screenshot") && course && (

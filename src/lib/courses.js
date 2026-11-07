@@ -9,6 +9,14 @@ export const courseIdFor = (name) => String(name).toLowerCase().replace(/[^a-z0-
 
 const key = (s) => String(s ?? "").trim().toLowerCase();
 
+// Grading items from different sources name things differently:
+// "Midterm (1.5 hours)", "Midterm", "Final Exam", "final" should all match.
+const itemKey = (s) =>
+  key(s)
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\b(exam|examination|test)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, "");
+
 export function findCourse(name) {
   const id = courseIdFor(name);
   return loadState().courses.find((c) => c.id === id) ?? null;
@@ -23,7 +31,7 @@ export function mergeWeights(oldWeights = [], incoming = []) {
   const merged = oldWeights.map((w) => ({ ...w }));
   for (const w of incoming) {
     if (!w || !String(w.item ?? "").trim()) continue;
-    const match = merged.find((m) => key(m.item) === key(w.item));
+    const match = merged.find((m) => itemKey(m.item) === itemKey(w.item));
     if (match) {
       if (typeof w.percent === "number") match.percent = w.percent;
       if (w.date) match.date = w.date;
