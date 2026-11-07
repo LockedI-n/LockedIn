@@ -63,7 +63,38 @@ export default function Upload() {
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Upload</h2>
-      <p className="text-slate-400">Add a course and upload the syllabus and slides here.</p>
+      <label>
+        Course name
+        <input
+          type="text"
+          value={courseName}
+          onChange={(e) => setCourseName(e.target.value)}
+          disabled={loading}
+        />
+      </label>
+
+      <label>
+        Syllabus PDF
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => handleFileUpload(e, "syllabus")}
+          disabled={loading}
+        />
+      </label>
+
+      <label>
+        Slides PDF
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => handleFileUpload(e, "slides")}
+          disabled={loading}
+        />
+      </label>
+
+      {loading && <p>Processing PDF…</p>}
+      {statusMessage && <p role="status">{statusMessage}</p>}
     </section>
   );
 }
