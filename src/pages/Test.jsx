@@ -1,4 +1,4 @@
-```jsx
+jsx
 import { useEffect, useRef, useState } from "react";
 import { getQuiz, gradeAnswer } from "../lib/api.js";
 import { sampleCourse } from "../lib/sampleData.js";
@@ -1055,4 +1055,3 @@ export default function Test({ course = sampleCourse, onComplete }) {
     </section>
   );
 }
-```
