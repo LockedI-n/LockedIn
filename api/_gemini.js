@@ -7,8 +7,10 @@ import { GoogleGenAI } from "@google/genai";
 // Keep in sync with SIDEKICK_NAME in src/lib/config.js
 export const SIDEKICK_NAME = "Sparky";
 
-// Check Google AI Studio for the latest Flash model name and update this if needed.
-export const MODEL = "gemini-3.8-flash";
+// Models to try, in order. If one is busy (503/429), we move to the next one.
+// gemini-3.8-flash was taking 2-3 minutes per call, so it is not first.
+// gemini-2.5-flash does not work for new API keys.
+export const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"];
 
 // True when a key is set. Endpoints use this to decide whether to use sample data.
 export const hasKey = Boolean(process.env.GEMINI_API_KEY);
@@ -31,22 +33,21 @@ export async function askJSON(prompt, parts = []) {
   if (!ai) throw new Error("GEMINI_API_KEY is not set");
 
   const request = {
-    model: MODEL,
     contents: [{ role: "user", parts: [{ text: `${SIDEKICK}\n\n${prompt}` }, ...parts] }],
     config: { responseMimeType: "application/json" },
   };
 
   // Gemini sometimes says "high demand" (503) or "too many requests" (429).
-  // Retry a couple of times with a short wait before giving up.
+  // When that happens, try the next model in MODELS instead of waiting.
   let response;
-  for (let attempt = 1; ; attempt++) {
+  for (let i = 0; i < MODELS.length; i++) {
     try {
-      response = await ai.models.generateContent(request);
+      response = await ai.models.generateContent({ ...request, model: MODELS[i] });
       break;
     } catch (err) {
       const busy = err?.status === 503 || err?.status === 429;
-      if (!busy || attempt >= 3) throw err;
-      await new Promise((r) => setTimeout(r, 1500 * attempt));
+      if (!busy || i === MODELS.length - 1) throw err;
+      console.warn(`${MODELS[i]} is busy, trying ${MODELS[i + 1]}`);
     }
   }
 
