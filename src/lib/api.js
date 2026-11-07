@@ -22,9 +22,10 @@ export function parseSyllabus({ courseName, text, fileBase64, mimeType }) {
   return post("/api/syllabus", { courseName, text, fileBase64, mimeType });
 }
 
-// { courseName, text?, images?: [{ data, mimeType }] } -> { topics: [{ name, summary }] }
-export function summarizeSlides({ courseName, text, images }) {
-  return post("/api/slides", { courseName, text, images });
+// { courseName, text?, images?: [{ data, mimeType }], topics?: [string] } -> { topics: [{ name, summary }] }
+// Pass `topics` (the course's topic names) so summaries come back under those exact names.
+export function summarizeSlides({ courseName, text, images, topics }) {
+  return post("/api/slides", { courseName, text, images, topics });
 }
 
 // { courseName, topic, summary, count? } -> { quiz: [...] }
@@ -36,4 +37,27 @@ export function getQuiz({ courseName, topic, summary, count = 4 }) {
 //   -> { score, gotRight, missed, sidekickMessage }
 export function gradeAnswer({ courseName, topic, summary, mode, answer }) {
   return post("/api/grade", { courseName, topic, summary, mode, answer });
+}
+
+// Canvas LMS (through our server, the token is never stored).
+// { baseUrl, token } -> { courses: [{ id, name, code }] }
+export function canvasCourses({ baseUrl, token }) {
+  return postCanvas({ baseUrl, token, action: "courses" });
+}
+
+// { baseUrl, token, courseId } -> { course: { name, weights: [{ item, percent, date, group }] } }
+export function canvasCourse({ baseUrl, token, courseId }) {
+  return postCanvas({ baseUrl, token, action: "course", courseId });
+}
+
+// Like post(), but shows Canvas's own error message (wrong token, etc.).
+async function postCanvas(body) {
+  const res = await fetch("/api/canvas", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Canvas request failed (${res.status})`);
+  return data;
 }
