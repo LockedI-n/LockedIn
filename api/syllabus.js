@@ -1,5 +1,5 @@
 // POST /api/syllabus
-// Input:  { courseName, text?, fileBase64?, mimeType? }
+// Input:  { courseName, text?, fileBase64?, mimeType? }   (file can be a PDF or a screenshot: image/png, image/jpeg, image/webp)
 // Output: { weights: [{ item, percent, date }], topics: [{ name, week, summary, score }] }
 // Owner: Person 2 (AI and Backend).
 
@@ -33,7 +33,7 @@ Return ONLY JSON in exactly this shape:
   "topics": [{ "name": "Decision Trees", "week": 5, "summary": "", "score": null }]
 }
 
-${text ? `Syllabus text:\n${text}` : "The syllabus is attached as a file."}`;
+${text ? `Syllabus text:\n${text}` : "The syllabus is attached as a file or image. It may be a screenshot of only part of it (for example just the grading table, or a Canvas page). Extract whatever is visible and return empty lists for anything not shown."}`;
 
   const parts = fileBase64 ? [{ inlineData: { data: fileBase64, mimeType: mimeType || "application/pdf" } }] : [];
 

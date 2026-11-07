@@ -28,3 +28,9 @@ export const COLORS = {
   warn: "bg-amber-500",
   bad: "bg-rose-500",
 };
+
+// Canvas LMS. Students can change the address on the Add course page.
+export const CANVAS_DEFAULT_URL = "https://canvas.sfu.ca";
+// Link to our "how to get a Canvas token" YouTube video. Leave "" until it's recorded.
+export const CANVAS_TUTORIAL_URL = "";
+

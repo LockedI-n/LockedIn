@@ -38,3 +38,26 @@ export function getQuiz({ courseName, topic, summary, count = 4 }) {
 export function gradeAnswer({ courseName, topic, summary, mode, answer }) {
   return post("/api/grade", { courseName, topic, summary, mode, answer });
 }
+
+// Canvas LMS (through our server, the token is never stored).
+// { baseUrl, token } -> { courses: [{ id, name, code }] }
+export function canvasCourses({ baseUrl, token }) {
+  return postCanvas({ baseUrl, token, action: "courses" });
+}
+
+// { baseUrl, token, courseId } -> { course: { name, weights: [{ item, percent, date, group }] } }
+export function canvasCourse({ baseUrl, token, courseId }) {
+  return postCanvas({ baseUrl, token, action: "course", courseId });
+}
+
+// Like post(), but shows Canvas's own error message (wrong token, etc.).
+async function postCanvas(body) {
+  const res = await fetch("/api/canvas", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Canvas request failed (${res.status})`);
+  return data;
+}
