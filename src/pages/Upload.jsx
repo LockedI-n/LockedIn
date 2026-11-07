@@ -1,121 +1,64 @@
 // Add course: build a course from any mix of Canvas, PDFs, screenshots and manual entry.
 // Owner: Person 1 (Uploads and Content).
-//
-// Every option fills in part of the same course and saves it right away
-// (with Sunny's upsertCourse), so the Dashboard and Test pages can use it.
+// TODO: course name input, pdf.js text and page images, call parseSyllabus and summarizeSlides from lib/api.js.
+import { useState } from 'react';
+import { parsePDF } from './pdfParser';
+import { parseSyllabus, summarizeSlides } from "../lib/api";
 
-import { useRef, useState } from "react";
-import Sidekick from "../components/Sidekick.jsx";
-import CanvasPanel from "../components/addcourse/CanvasPanel.jsx";
-import FilePanel from "../components/addcourse/FilePanel.jsx";
-import CourseEditor from "../components/addcourse/CourseEditor.jsx";
-import { loadState } from "../lib/storage.js";
-import { courseIdFor, emptyCourse, mergeSummaries, mergeTopics, mergeWeights, saveCourse, totalPercent } from "../lib/courses.js";
+export default function Upload() {
+  const [courseName, setCourseName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
-const OPTIONS = [
-  { id: "canvas", title: "Connect Canvas", hint: "Deadlines and grade weights, automatically" },
-  { id: "pdf", title: "Upload PDFs", hint: "Syllabus and lecture slides" },
-  { id: "screenshot", title: "Screenshot", hint: "A photo of the grading table or a slide" },
-  { id: "manual", title: "Enter by hand", hint: "Add a missing date, item or topic" },
-];
-
-// What Sparky says after each step.
-function sparkyFor(course, event) {
-  if (!course) return { mood: "happy", message: "Let's add a course! Type its name, then pick any option below. You can mix them." };
-  const missingDates = course.weights.filter((w) => !w.date).length;
-  const total = totalPercent(course);
-  const withSummary = course.topics.filter((t) => t.summary).length;
-  const biggest = [...course.weights].sort((a, b) => b.percent - a.percent)[0];
-
-  switch (event?.type) {
-    case "canvas":
-      return {
-        mood: "proud",
-        message: `Pulled ${event.count} deadlines from Canvas!${biggest ? ` ${biggest.item} is worth ${biggest.percent}%, so we'll start on it early.` : ""} Upload slides next so I can quiz you.`,
-      };
-    case "syllabus":
-      return { mood: "proud", message: `Found ${course.weights.length} graded items and ${course.topics.length} topics. Nice!` };
-    case "slides":
-      return {
-        mood: "happy",
-        message: `Summaries ready for ${event.count} topic${event.count === 1 ? "" : "s"}. ${withSummary} of ${course.topics.length} topics are ready for quizzes!`,
-      };
-    case "error":
-      return { mood: "nudge", message: event.message };
-    default:
-      break;
-  }
-  if (course.weights.length && total > 101)
-    return { mood: "nudge", message: `Your grades add up to ${total}%. Something might be counted twice. Remove the extra item below.` };
-  if (course.weights.length && total < 99)
-    return { mood: "nudge", message: `Your grades add up to ${total}%. Is something missing, like a midterm or final? Add it by hand.` };
-  if (missingDates)
-    return { mood: "nudge", message: `${missingDates} item${missingDates === 1 ? " has" : "s have"} no due date. Add ${missingDates === 1 ? "it" : "them"} so I can remind you!` };
-  if (course.topics.length && withSummary < course.topics.length)
-    return { mood: "thinking", message: `Upload slides for the rest of your topics and I'll write the summaries.` };
-  if (course.weights.length || course.topics.length) return { mood: "proud", message: `${course.name} is all set! Check your Dashboard for today's habit.` };
-  return { mood: "happy", message: `Great, ${course.name}! Pick any option below to fill it in.` };
-}
-
-// Props: initialCourseId (open an existing course, e.g. from the Dashboard's "Add slides"),
-//        onNavigate(page) to move to another page.
-export default function Upload({ initialCourseId, onNavigate = () => {} }) {
-  const [courses, setCourses] = useState(() => loadState().courses);
-  const [courseName, setCourseName] = useState(() => courses.find((c) => c.id === initialCourseId)?.name ?? "");
-  const [open, setOpen] = useState(initialCourseId ? "pdf" : null);
-  const [busy, setBusy] = useState("");
-  const [event, setEvent] = useState(null);
-  const [sampleWarning, setSampleWarning] = useState(false);
-  const [needName, setNeedName] = useState(false);
-  const nameRef = useRef(null);
-
-  const name = courseName.trim();
-  const saved = courses.find((c) => c.id === courseIdFor(name));
-  const course = name ? (saved ?? emptyCourse(name)) : null;
-  const sparky = busy
-    ? { mood: "thinking", message: busy }
-    : needName && !name
-      ? { mood: "nudge", message: "First, type your course name in the box (like CMPT 455). Then pick how to add it!" }
-      : sparkyFor(course, event);
-
-  function pickOption(id) {
-    if (id !== "canvas" && !name) {
-      setNeedName(true);
-      setOpen(id);
-      nameRef.current?.focus();
+  // handles file upload and parsing
+  const handleFileUpload = async (e, documentType) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+  if (file.type !== 'application/pdf') {
+      alert('Please upload a valid PDF file.');
       return;
-    }
-    // Only close it if its panel was actually showing (it's hidden while the name is missing).
-    const showing = open === id && (id === "canvas" || name);
-    setOpen(showing ? null : id);
+  }
+  if (!courseName) {
+      alert('Please enter a course name before uploading.');
+      return;
   }
 
-  // Save a new version of the course and remember why (for Sparky).
-  function update(next, why) {
-    setCourses(saveCourse(next));
-    setEvent(why);
-  }
-  const onError = (message) => setEvent({ type: "error", message });
+  setLoading(true);
+  setStatusMessage(`Uploading ${documentType} for course "${courseName}"...`);
 
-  function onCanvasImport(imported) {
-    const targetName = name || imported.name;
-    if (!name) setCourseName(targetName);
-    const base = courses.find((c) => c.id === courseIdFor(targetName)) ?? emptyCourse(targetName);
-    update({ ...base, weights: mergeWeights(base.weights, imported.weights) }, { type: "canvas", count: imported.weights.length });
+  try {
+  const parsedData = await parsePDF(file); // call parsePDF to extract text and images from the uploaded PDF file
+  setStatusMessage(`Parsed ${parsedData.pageImages.length} pages and extracted text content.`); // update status message with the number of pages parsed and text content extracted
+
+  let apiResult;
+
+  if (documentType === "syllabus") { // if the document type is syllabus, call parseSyllabus API with course name and extracted text content
+    apiResult = await parseSyllabus({
+    courseName,
+    text: parsedData.textContent,
+  });
+  } else if (documentType === "slides") {
+    apiResult = await summarizeSlides({
+    courseName,
+    images: parsedData.pageImages,
+  });
+  } else {
+  throw new Error(`Unsupported document type: ${documentType}`);
   }
 
-  function onFileResult(kind, result) {
-    setSampleWarning(Boolean(result.fallback));
-    if (kind === "syllabus") {
-      update(
-        { ...course, weights: mergeWeights(course.weights, result.weights), topics: mergeTopics(course.topics, result.topics) },
-        { type: "syllabus" }
-      );
-    } else {
-      const topics = result.topics ?? [];
-      update({ ...course, topics: mergeSummaries(course.topics, topics) }, { type: "slides", count: topics.length });
-    }
+  setStatusMessage(`API result: ${JSON.stringify(apiResult)}`); // update status message with the API result
+
+  } catch (error) {
+    console.error('Error during file upload and parsing:', error);
+    setStatusMessage(`Error: ${error.message}`);
+  } finally {
+    setLoading(false);
+    e.target.value = ''; // Reset file input
   }
+};
+
+
 
   return (
     <section className="space-y-6">
