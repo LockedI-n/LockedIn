@@ -115,7 +115,7 @@ Notes:
 - **Person 1, Uploads and Content:** upload screen, course setup, pdf.js text and page images, calls `/api/syllabus` and `/api/slides`. Files: `src/pages/Upload.jsx`.
 - **Person 2, AI and Backend:** everything in `/api`, prompts, sidekick voice, JSON reliability, fallbacks. Files: `api/`, `src/lib/api.js`.
 - **Person 3, Dashboard, Sidekick, Progress:** dashboard, sidekick moods, daily ring, mastery bars, streaks, localStorage, weak topic loop. Files: `src/pages/Dashboard.jsx`, `src/components/`, `src/lib/storage.js`.
-- **Person 4, Test Modes and Pitch:** MCQ, Feynman, and written answer screens, polish, demo script, backup recording. Files: `src/pages/Test.jsx`.
+- **Person 4, Test Modes and Pitch:** MCQ, Feynman (For Later), and written answer screens, polish, demo script, backup recording. Files: `src/pages/Test.jsx`.
 
 ## Git workflow
 
