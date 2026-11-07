@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { getQuiz } from "../lib/api.js";
+import { getQuiz, gradeAnswer } from "../lib/api.js";
 import { sampleCourse } from "../lib/sampleData.js";
 import { QUIZ_COUNT } from "../lib/config.js";
 
@@ -8,6 +8,12 @@ const LETTERS = ["A", "B", "C", "D"];
 
 export default function Test({ course = sampleCourse, onComplete }) {
   const [topicName, setTopicName] = useState("Decision Trees");
+  const [mode, setMode] = useState("mcq");
+  const [writtenAnswer, setWrittenAnswer] = useState("");
+  const [gradeResult, setGradeResult] = useState(null);
+  const [grading, setGrading] = useState(false);
+  const [gradeError, setGradeError] = useState("");
+  const [gradeFallback, setGradeFallback] = useState(false);
   const [quiz, setQuiz] = useState([]);
   const [answers, setAnswers] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -87,6 +93,50 @@ export default function Test({ course = sampleCourse, onComplete }) {
     });
   }
 
+  // Ask Gemini to evaluate the student's written explanation.
+  async function submitWrittenAnswer() {
+    if (!topic || !writtenAnswer.trim()) {
+      setGradeError("Write an explanation before submitting.");
+      return;
+    }
+
+    setGrading(true);
+    setGradeError("");
+    setGradeResult(null);
+    setGradeFallback(false);
+
+    try {
+      const result = await gradeAnswer({
+        courseName: course.name,
+        topic: topic.name,
+        summary: topic.summary,
+        mode: "written",
+        answer: writtenAnswer.trim(),
+      });
+
+      if (typeof result.score !== "number") {
+        throw new Error("The grader returned an invalid result. Please try again.");
+      }
+
+      setGradeResult(result);
+      setGradeFallback(Boolean(result.fallback));
+
+      onComplete?.({
+        courseId: course.id,
+        topic: topicName,
+        mode: "written",
+        score: result.score,
+        total: 100,
+        answer: writtenAnswer.trim(),
+        feedback: result,
+      });
+    } catch (err) {
+      setGradeError(err.message || "Something went wrong while grading. Please try again.");
+    } finally {
+      setGrading(false);
+    }
+  }
+
   function resetQuiz() {
     setQuiz([]);
     setAnswers({});
@@ -94,6 +144,10 @@ export default function Test({ course = sampleCourse, onComplete }) {
     setSubmitted(false);
     setError("");
     setFallback(false);
+    setWrittenAnswer("");
+    setGradeResult(null);
+    setGradeError("");
+    setGradeFallback(false);
   }
 
   const answeredCount = Object.keys(answers).length;
@@ -118,9 +172,36 @@ export default function Test({ course = sampleCourse, onComplete }) {
         </p>
       </div>
 
-      {/* TOPIC SELECTION */}
-      {quiz.length === 0 && (
+      {/* MODE AND TOPIC SELECTION */}
+      {quiz.length === 0 && !gradeResult && (
         <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div>
+            <p className="mb-2 text-sm font-medium">Choose a test mode</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("mcq")}
+                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+                  mode === "mcq"
+                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                Multiple Choice
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("written")}
+                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+                  mode === "written"
+                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                Written Response
+              </button>
+            </div>
+          </div>
           <div>
             <label className="mb-2 block text-sm font-medium">
               Course
@@ -173,12 +254,139 @@ export default function Test({ course = sampleCourse, onComplete }) {
             </p>
           )}
 
+          {mode === "mcq" ? (
+            <button
+              onClick={startQuiz}
+              disabled={loading || !topic}
+              className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "Generating questions..." : "Generate Quiz"}
+            </button>
+          ) : null}
+        </div>
+      )}
+
+      {/* WRITTEN RESPONSE */}
+      {mode === "written" && quiz.length === 0 && !gradeResult && (
+        <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div>
+            <p className="text-sm font-medium text-amber-400">{course.name}</p>
+            <h3 className="mt-1 text-lg font-semibold">{topicName}</h3>
+            <p className="mt-2 text-sm text-slate-400">
+              Explain this topic in your own words. Include the key ideas,
+              how they work, and why they matter.
+            </p>
+          </div>
+
+          <label htmlFor="written-answer" className="block text-sm font-medium">
+            Your explanation
+          </label>
+          <textarea
+            id="written-answer"
+            value={writtenAnswer}
+            onChange={(event) => setWrittenAnswer(event.target.value)}
+            placeholder="Start explaining what you know about this topic..."
+            rows={9}
+            maxLength={10000}
+            className="w-full resize-y rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 focus:border-amber-400"
+          />
+          <div className="flex justify-between text-xs text-slate-500">
+            <span>Try to explain it without copying the topic summary.</span>
+            <span>{writtenAnswer.length}/10,000</span>
+          </div>
+
+          {gradeError && (
+            <p className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+              {gradeError}
+            </p>
+          )}
+
           <button
-            onClick={startQuiz}
-            disabled={loading || !topic}
+            onClick={submitWrittenAnswer}
+            disabled={grading || !writtenAnswer.trim()}
             className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Generating questions..." : "Generate Quiz"}
+            {grading ? "Evaluating your explanation..." : "Submit for Evaluation"}
+          </button>
+        </div>
+      )}
+
+      {/* WRITTEN RESULTS */}
+      {mode === "written" && gradeResult && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
+            <p className="text-sm font-medium text-slate-400">
+              Written response evaluated
+            </p>
+            <p
+              className={`my-3 text-5xl font-bold ${
+                gradeResult.score >= 70 ? "text-emerald-400" : "text-amber-400"
+              }`}
+            >
+              {gradeResult.score}%
+            </p>
+            <p className="text-sm text-slate-300">
+              Your explanation of {topicName}
+            </p>
+          </div>
+
+          {gradeFallback && (
+            <p className="rounded-lg bg-amber-400/10 p-3 text-sm text-amber-300">
+              Sample feedback is being displayed because AI grading is unavailable.
+            </p>
+          )}
+
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 className="mb-2 font-semibold text-emerald-400">What you got right</h3>
+            {gradeResult.gotRight?.length ? (
+              <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+                {gradeResult.gotRight.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-400">No specific strengths were identified.</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 className="mb-2 font-semibold text-amber-400">What to improve</h3>
+            {gradeResult.missed?.length ? (
+              <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+                {gradeResult.missed.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-400">Nothing major was missing. Nice work!</p>
+            )}
+          </div>
+
+          {gradeResult.sidekickMessage && (
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400">
+                Sparky's feedback
+              </p>
+              <p className="text-sm leading-relaxed text-slate-300">
+                {gradeResult.sidekickMessage}
+              </p>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Your submitted answer
+            </p>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+              {writtenAnswer}
+            </p>
+          </div>
+
+          <button
+            onClick={resetQuiz}
+            className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
+          >
+            Try Another Topic
           </button>
         </div>
       )}
