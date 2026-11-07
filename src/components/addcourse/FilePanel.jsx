@@ -67,13 +67,13 @@ export default function FilePanel({ mode, course, busy, setBusy, onResult, onErr
       {(isShot ? SHOT_CARDS : PDF_CARDS).map(([kind, title, hint]) => (
         <label
           key={kind}
-          className={`block cursor-pointer rounded-xl border border-dashed border-slate-700 bg-slate-800/40 p-4 transition hover:border-amber-400 ${
+          className={`block cursor-pointer rounded-xl border border-dashed border-line bg-mist p-4 transition hover:border-brand ${
             busy ? "pointer-events-none opacity-50" : ""
           }`}
         >
           <div className="font-medium">{title}</div>
-          <div className="text-sm text-slate-400">{hint}</div>
-          <div className="mt-3 text-xs font-semibold text-amber-400">Choose file</div>
+          <div className="text-sm text-ink/60">{hint}</div>
+          <div className="mt-3 text-xs font-semibold text-brand-dark">Choose file</div>
           <input
             type="file"
             accept={isShot ? "image/*" : "application/pdf"}

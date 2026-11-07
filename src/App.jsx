@@ -51,12 +51,12 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-canvas text-ink">
       <div className={`mx-auto space-y-6 px-4 py-8 ${nav.page === "Dashboard" ? "max-w-5xl" : "max-w-2xl"}`}>
         <header className="flex items-center gap-3">
           <img src={mascot} alt={SIDEKICK_NAME} className="h-10 w-auto" />
           <h1 className="text-2xl font-bold tracking-tight">
-            Locked<span className="text-amber-400">In</span>
+            Locked<span className="text-brand-dark">In</span>
           </h1>
         </header>
 
@@ -66,7 +66,7 @@ export default function App() {
               key={name}
               onClick={() => onNavigate(name)}
               className={`rounded-lg px-4 py-2 text-sm font-medium ${
-                name === nav.page ? "bg-amber-400 text-slate-950" : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                name === nav.page ? "bg-brand text-white" : "bg-mist text-ink hover:bg-line"
               }`}
             >
               {name}

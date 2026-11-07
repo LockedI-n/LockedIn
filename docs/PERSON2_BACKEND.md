@@ -28,7 +28,7 @@ If I ever need to change a shape, log it here first:
 
 | Date / Hour | Change | Who I told |
 | --- | --- | --- |
-| | | |
+| Hour 4 | Optional `covers` on each weight item (topic names it tests, or null). Used for weighted mastery | README updated; tell the team |
 
 ---
 
@@ -40,6 +40,7 @@ Write down every prompt change and why, so we can undo it if results get worse.
 | --- | --- | --- | --- | --- |
 | 0 | all | First versions written | Starter setup | Not tested yet |
 | 1 | all | Model `gemini-2.5-flash` to `gemini-3.8-flash`; retry up to 3 times on 503/429 | 2.5 is closed to new keys; Gemini often says "high demand" | Better: real responses now |
+| 4 | syllabus | Adds `covers` per graded item, only when the syllabus says ("weeks 1-3") | Weighted mastery needs to know which topics each assessment tests | Good: midterm weeks 1-3 mapped to the right 3 topics; cumulative final left null |
 | 2 | slides | Optional `topics` input; summaries use those exact names. Summaries written as neutral notes | Slide summaries didn't match syllabus topic names; Sparky's "Hey there!" leaked into notes | Better: both topics matched exactly |
 | 1 | all | Model list: `gemini-3.6-flash`, then `3.5-flash`, then `3.5-flash-lite`. Busy model moves to the next one | `gemini-3.8-flash` took 130-210 s per call | Much better: 6-15 s per call |
 

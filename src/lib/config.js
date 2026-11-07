@@ -16,17 +16,17 @@ export const STORAGE_KEY = "study-sidekick";
 // Default number of MCQ questions per quiz.
 export const QUIZ_COUNT = 4;
 
-// Theme colors (Tailwind class names, so they work with className).
+// Theme colors (Tailwind class names). The palette itself is in src/index.css.
 export const COLORS = {
-  bg: "bg-slate-950",
-  card: "bg-slate-900",
-  text: "text-slate-100",
-  muted: "text-slate-400",
-  accent: "text-amber-400",
-  accentBg: "bg-amber-400",
-  good: "bg-emerald-500",
-  warn: "bg-amber-500",
-  bad: "bg-rose-500",
+  bg: "bg-canvas",
+  card: "bg-white",
+  text: "text-ink",
+  muted: "text-ink/60",
+  accent: "text-brand-dark",
+  accentBg: "bg-brand",
+  good: "bg-brand",
+  warn: "bg-coral",
+  bad: "bg-danger",
 };
 
 // Canvas LMS. Students can change the address on the Add course page.

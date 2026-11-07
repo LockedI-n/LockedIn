@@ -54,16 +54,16 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-300">
+      <p className="text-sm text-ink/80">
         Pull your assignments, due dates and grade weights straight from Canvas. Canvas doesn't know your weekly
         topics, so upload slides afterwards for summaries and quizzes.
       </p>
 
-      <button type="button" onClick={() => setShowHelp((v) => !v)} className="text-sm font-medium text-amber-400 hover:underline">
+      <button type="button" onClick={() => setShowHelp((v) => !v)} className="text-sm font-medium text-brand-dark hover:underline">
         {showHelp ? "Hide" : "How do I get a Canvas token?"}
       </button>
       {showHelp && (
-        <div className="space-y-2 rounded-lg bg-slate-800/60 p-3 text-sm text-slate-300">
+        <div className="space-y-2 rounded-lg bg-mist p-3 text-sm text-ink/80">
           <ol className="list-decimal space-y-1 pl-5">
             <li>Log in to Canvas and open <b>Account</b>, then <b>Settings</b>.</li>
             <li>Scroll to <b>Approved Integrations</b> and click <b>+ New Access Token</b>.</li>
@@ -71,13 +71,13 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
             <li>Copy the token and paste it below. Canvas only shows it once.</li>
           </ol>
           {CANVAS_TUTORIAL_URL ? (
-            <a href={CANVAS_TUTORIAL_URL} target="_blank" rel="noreferrer" className="inline-block font-medium text-amber-400 hover:underline">
+            <a href={CANVAS_TUTORIAL_URL} target="_blank" rel="noreferrer" className="inline-block font-medium text-brand-dark hover:underline">
               Watch the 1-minute video
             </a>
           ) : (
-            <p className="text-slate-500">Video walkthrough coming soon.</p>
+            <p className="text-ink/50">Video walkthrough coming soon.</p>
           )}
-          <p className="text-slate-500">
+          <p className="text-ink/50">
             We only use the token to read your courses. It isn't saved anywhere. You can delete it in Canvas any time.
           </p>
         </div>
@@ -85,16 +85,16 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
 
       <form onSubmit={loadCourses} className="space-y-3">
         <label className="block space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Canvas address</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-ink/60">Canvas address</span>
           <input
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
             disabled={!!busy}
-            className="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full rounded-lg bg-mist px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand"
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Access token</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-ink/60">Access token</span>
           <input
             type="password"
             value={token}
@@ -102,13 +102,13 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
             disabled={!!busy}
             placeholder="Paste your token"
             autoComplete="off"
-            className="w-full rounded-lg bg-slate-800 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full rounded-lg bg-mist px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand"
           />
         </label>
         <button
           type="submit"
           disabled={!!busy || token.trim().length < 10}
-          className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-300 disabled:opacity-40"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
         >
           Show my courses
         </button>
@@ -116,7 +116,7 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
 
       {courses?.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Pick a course to import</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-ink/60">Pick a course to import</div>
           <ul className="space-y-2">
             {courses.map((c) => (
               <li key={c.id}>
@@ -124,10 +124,10 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
                   type="button"
                   onClick={() => importCourse(c)}
                   disabled={!!busy}
-                  className="w-full rounded-lg bg-slate-800 px-3 py-2 text-left text-sm hover:bg-slate-700 disabled:opacity-40"
+                  className="w-full rounded-lg bg-mist px-3 py-2 text-left text-sm hover:bg-line disabled:opacity-40"
                 >
                   <div className="font-medium">{c.code || c.name}</div>
-                  {c.code && c.code !== c.name && <div className="text-xs text-slate-400">{c.name}</div>}
+                  {c.code && c.code !== c.name && <div className="text-xs text-ink/60">{c.name}</div>}
                 </button>
               </li>
             ))}

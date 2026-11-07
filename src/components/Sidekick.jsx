@@ -176,11 +176,11 @@ export default function Sidekick({ message, mood = "happy", size }) {
             <div
                 role="status"
                 aria-live="polite"
-                className="relative rounded-2xl bg-white px-4 py-3 text-sm font-medium text-[#1B1740] shadow-sm ring-1 ring-[#1B1740]/10"
+                className="relative rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink shadow-sm ring-1 ring-line"
             >
         <span
             aria-hidden="true"
-            className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-white ring-1 ring-[#1B1740]/10 [clip-path:polygon(0_0,0_100%,100%_100%)]"
+            className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-white ring-1 ring-line [clip-path:polygon(0_0,0_100%,100%_100%)]"
         />
                 {message}
             </div>

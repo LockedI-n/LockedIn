@@ -21,8 +21,8 @@ export default function ProgressRing({
                                        percent,
                                        size = 132,
                                        stroke = 12,
-                                       color = "#FFD23F",
-                                       track = "rgba(255,255,255,0.15)",
+                                       color = "#2FAD8F",
+                                       track = "rgba(11,16,51,0.10)",
                                        label = "Today's progress",
                                      }) {
   const reduceMotion = useReducedMotion();
@@ -42,7 +42,7 @@ export default function ProgressRing({
         particleCount: 90,
         spread: 70,
         origin: { y: 0.4 },
-        colors: [color, "#FFFFFF", "#4B3FD1"],
+        colors: [color, "#8AD1D6", "#00FFCF", "#FE7E84"],
       });
     }
     prev.current = pct;

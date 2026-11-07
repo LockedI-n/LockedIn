@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+/* LockedIn palette, taken from the mascot (src/assets/sidekick/mascot.svg).
+   Use these names in classes: bg-brand, text-ink, ring-line, bg-coral/20, ... */
+@theme {
+  --color-canvas: #f3faf9;      /* page background, a very light teal */
+  --color-mist: #e3f2f1;        /* inputs, inactive buttons */
+  --color-line: #cfe6e4;        /* borders and dividers */
+  --color-ink: #0b1033;         /* text, like the mascot's outline */
+  --color-navy: #000090;        /* mascot's navy: links and secondary buttons */
+  --color-brand: #2fad8f;       /* mascot's green: main buttons, success */
+  --color-brand-dark: #1f8a70;  /* hover, green text on light backgrounds */
+  --color-teal: #8ad1d6;        /* mascot's light teal: highlight panels */
+  --color-mint: #00ffcf;        /* mascot's mint: small accents */
+  --color-coral: #fe7e84;       /* mascot's coral: warnings, "needs work" */
+  --color-danger: #fd4e53;      /* mascot's red: errors, wrong answers */
+  --color-danger-dark: #c2363b; /* red text that stays readable */
+  --color-cream: #fdfcf0;       /* mascot's teeth: soft cards */
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+}

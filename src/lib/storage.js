@@ -11,6 +11,7 @@
 //        updateState((s) => recordTestResult(s, { habitId, score }));
 
 import * as config from "./config.js";
+import { weakTopicsByImpact } from "./mastery.js";
 
 const STORAGE_KEY = config.STORAGE_KEY ?? "study-sidekick";
 const MASTERY = config.MASTERY_THRESHOLD ?? 70;
@@ -103,7 +104,7 @@ export function pickTopic(course, habits = []) {
   const topics = course.topics ?? [];
   if (!topics.length) return null;
 
-  const weak = weakTopics(course);
+  const weak = weakTopicsByImpact(course); // most damaging to the grade first
   if (weak.length) return weak[0].name;
 
   const seen = new Set(

@@ -103,11 +103,11 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
 
       <div className="space-y-1">
         <h2 className="text-2xl font-bold">Add a course</h2>
-        <p className="text-slate-400">Use one option or combine them. Everything saves as you go.</p>
+        <p className="text-ink/60">Use one option or combine them. Everything saves as you go.</p>
       </div>
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-slate-300">Course name</span>
+        <span className="text-sm font-medium text-ink/80">Course name</span>
         <input
           list="saved-courses"
           value={courseName}
@@ -117,7 +117,7 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
           }}
           placeholder="e.g. CMPT 455 (or connect Canvas to fill this in)"
           disabled={!!busy}
-          className="w-full rounded-xl bg-slate-800 px-4 py-3 text-slate-100 placeholder-slate-500 outline-none focus:ring-2 focus:ring-amber-400"
+          className="w-full rounded-xl bg-mist px-4 py-3 text-ink placeholder-ink/40 outline-none focus:ring-2 focus:ring-brand"
         />
         <datalist id="saved-courses">
           {courses.map((c) => (
@@ -138,30 +138,30 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
               onClick={() => setOpen(active ? null : o.id)}
               title={needsName ? "Type a course name first" : undefined}
               className={`rounded-2xl p-4 text-left transition ${
-                active ? "bg-amber-400 text-slate-950" : "bg-slate-900 ring-1 ring-slate-800 hover:ring-amber-400"
+                active ? "bg-brand text-white" : "bg-white ring-1 ring-line hover:ring-brand"
               } disabled:cursor-not-allowed disabled:opacity-40`}
             >
               <div className="font-semibold">{o.title}</div>
-              <div className={`mt-1 text-xs ${active ? "text-slate-800" : "text-slate-400"}`}>{o.hint}</div>
+              <div className={`mt-1 text-xs ${active ? "text-white/85" : "text-ink/60"}`}>{o.hint}</div>
             </button>
           );
         })}
       </div>
 
       {open && (
-        <div className="rounded-2xl bg-slate-900 p-4 ring-1 ring-slate-800">
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-line">
           {open === "canvas" && <CanvasPanel busy={busy} setBusy={setBusy} onImport={onCanvasImport} onError={onError} />}
           {(open === "pdf" || open === "screenshot") && course && (
             <FilePanel mode={open} course={course} busy={busy} setBusy={setBusy} onResult={onFileResult} onError={onError} />
           )}
           {open === "manual" && (
-            <p className="text-sm text-slate-300">Add or fix anything in the course below. Dates you add here are used for reminders.</p>
+            <p className="text-sm text-ink/80">Add or fix anything in the course below. Dates you add here are used for reminders.</p>
           )}
         </div>
       )}
 
       {sampleWarning && (
-        <p className="rounded-lg bg-amber-400/10 px-3 py-2 text-sm text-amber-300">
+        <p className="rounded-lg bg-coral/20 px-3 py-2 text-sm text-danger-dark">
           The AI was busy, so that last result is sample data. Try the upload again in a minute.
         </p>
       )}
@@ -172,7 +172,7 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
         <button
           type="button"
           onClick={() => onNavigate("Dashboard")}
-          className="w-full rounded-xl bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
+          className="w-full rounded-xl bg-brand px-4 py-3 font-semibold text-white hover:bg-brand-dark"
         >
           Done, go to my Dashboard
         </button>

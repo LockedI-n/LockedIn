@@ -28,8 +28,15 @@ export function mergeWeights(oldWeights = [], incoming = []) {
       if (typeof w.percent === "number") match.percent = w.percent;
       if (w.date) match.date = w.date;
       if (w.group) match.group = w.group;
+      if (Array.isArray(w.covers)) match.covers = w.covers;
     } else {
-      merged.push({ item: String(w.item).trim(), percent: Number(w.percent) || 0, date: w.date || null, ...(w.group ? { group: w.group } : {}) });
+      merged.push({
+        item: String(w.item).trim(),
+        percent: Number(w.percent) || 0,
+        date: w.date || null,
+        ...(w.group ? { group: w.group } : {}),
+        ...(Array.isArray(w.covers) ? { covers: w.covers } : {}),
+      });
     }
   }
   return merged;
