@@ -75,8 +75,6 @@ export default function JepiBuddy() {
         aria-label={`Talk to ${SIDEKICK_NAME}`}
         title={`Talk to ${SIDEKICK_NAME}`}
         className="h-16 w-16 shrink-0 rounded-full bg-white p-2 shadow-lg ring-1 ring-line"
-        animate={reduce ? undefined : { y: [0, -5, 0], rotate: [0, -4, 4, 0] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
         whileHover={reduce ? undefined : { scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
       >

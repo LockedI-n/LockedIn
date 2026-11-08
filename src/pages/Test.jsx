@@ -608,10 +608,10 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
           {course.topics.length === 0 ? null : topic?.summary ? (
             <div className="rounded-lg bg-mist p-4">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-dark">
+              <p className="mb-1 text-sm font-semibold text-brand-dark">
                 Topic summary
                 {topicShare(course, topicName) > 0 && (
-                  <span className="ml-2 normal-case text-ink/60">· about {topicShare(course, topicName)}% of your grade</span>
+                  <span className="ml-1 font-normal text-ink/60">(about {topicShare(course, topicName)}% of your grade)</span>
                 )}
               </p>
               <p className="text-sm leading-relaxed text-ink/80">
@@ -936,7 +936,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
           {gradeResult.sidekickMessage && (
             <div className="rounded-xl border border-line bg-white p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark">
+              <p className="mb-2 text-sm font-semibold text-brand-dark">
                 {SIDEKICK_NAME}'s feedback
               </p>
               <p className="text-sm leading-relaxed text-ink/80">
@@ -946,7 +946,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           )}
 
           <div className="rounded-xl border border-line bg-white p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/60">
+            <p className="mb-2 text-sm font-semibold text-ink/70">
               Your submitted answer
             </p>
 
@@ -1170,7 +1170,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                   </div>
 
                   <div className="mt-3 rounded-lg bg-mist p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-brand-dark">
+                    <p className="mb-1 text-sm font-semibold text-brand-dark">
                       Explanation
                     </p>
 

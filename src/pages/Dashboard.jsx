@@ -206,8 +206,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                             <Sidekick mood={mood} />
                         </div>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ink/60">{SIDEKICK_NAME} says</p>
-                            <h1 className="mt-1 text-2xl font-extrabold leading-tight sm:text-[2rem]">
+                            <h1 className="text-2xl font-extrabold leading-tight sm:text-[2rem]">
                                 {message}
                             </h1>
                         </div>
@@ -392,7 +391,7 @@ function CourseCard({ course, onAddSlides, onTest, onDelete }) {
                 <div className="flex flex-wrap gap-2">
                     {weak.map((t) => (
                         <button key={t.name} type="button" onClick={() => onTest(t.name)} className="rounded-full bg-coral/20 px-3 py-1 text-sm font-medium text-danger-dark hover:bg-coral/30" title="Test this topic again">
-                            {t.name} · {t.score}%
+                            {t.name} <span className="font-bold">{t.score}%</span>
                         </button>
                     ))}
                 </div>

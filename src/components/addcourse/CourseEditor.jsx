@@ -69,7 +69,7 @@ export default function CourseEditor({ course, onChange, manualOpen, onDelete })
       </div>
 
       <section className="space-y-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-ink/60">Grading and deadlines</h4>
+        <h4 className="text-sm font-semibold text-ink/80">Grading and deadlines</h4>
         {weights.length === 0 && <p className="text-sm text-ink/50">Nothing yet. Use any option above, or add items by hand.</p>}
         <div className="space-y-3">
           {sections.map((sec, i) => (
@@ -128,7 +128,7 @@ export default function CourseEditor({ course, onChange, manualOpen, onDelete })
       </section>
 
       <section className="space-y-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-ink/60">Topics</h4>
+        <h4 className="text-sm font-semibold text-ink/80">Topics</h4>
         {course.topics.length === 0 && <p className="text-sm text-ink/50">No topics yet. Upload a syllabus or slides.</p>}
         <ul className="flex flex-wrap gap-2">
           {course.topics.map((t) => (

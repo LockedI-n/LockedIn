@@ -100,7 +100,7 @@ export default function CanvasPanel({ busy, setBusy, onImportAll, onError }) {
 
       <form onSubmit={loadCourses} className="space-y-3">
         <label className="block space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink/60">Canvas address</span>
+          <span className="text-sm font-semibold text-ink/80">Canvas address</span>
           <input
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
@@ -109,7 +109,7 @@ export default function CanvasPanel({ busy, setBusy, onImportAll, onError }) {
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink/60">Access token</span>
+          <span className="text-sm font-semibold text-ink/80">Access token</span>
           <input
             type="password"
             value={token}
@@ -131,7 +131,7 @@ export default function CanvasPanel({ busy, setBusy, onImportAll, onError }) {
 
       {courses?.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-ink/60">Your Canvas courses</div>
+          <div className="text-sm font-semibold text-ink/80">Your Canvas courses</div>
           <ul className="space-y-2">
             {courses.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-mist px-3 py-2 text-sm">
