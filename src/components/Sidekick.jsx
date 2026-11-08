@@ -19,17 +19,19 @@ import { SIDEKICK_NAME } from "../lib/config.js";
 
 const MOODS = ["idle", "happy", "proud", "nudge", "thinking"];
 
-// How the mascot moves in each mood (loops forever, paused for reduced motion).
+// How the mascot moves in each mood (all motion is off for reduced-motion users).
 const loop = (duration, extra = {}) => ({ duration, repeat: Infinity, ease: "easeInOut", ...extra });
 const MOTION = {
-    idle: { animate: { y: [0, -4, 0] }, transition: { y: loop(3.2) } },
-    happy: { animate: { y: [0, -8, 0] }, transition: { y: loop(1.4) } },
+    // Moods pop once when they change (motion that answers what happened)...
+    idle: { animate: {}, transition: {} },
+    happy: { animate: { y: [0, -8, 0] }, transition: { y: { duration: 0.6 } } },
+    nudge: { animate: { rotate: [0, -8, 8, -6, 0] }, transition: { rotate: { duration: 0.7 } } },
+    thinking: { animate: { rotate: [0, -5, 0] }, transition: { rotate: { duration: 1.6, repeat: Infinity, ease: "easeInOut" } } },
+    // ...and only a celebration keeps going.
     proud: {
         animate: { y: [0, -16, 0, 0], rotate: [0, -6, 6, 0] },
         transition: { y: loop(1.6, { times: [0, 0.3, 0.6, 1] }), rotate: loop(1.6) },
     },
-    nudge: { animate: { rotate: [0, -8, 8, -8, 0, 0] }, transition: { rotate: loop(2, { times: [0, 0.1, 0.2, 0.3, 0.4, 1] }) } },
-    thinking: { animate: { rotate: [0, -5, -5, 0], y: [0, -2, 0] }, transition: { rotate: loop(3), y: loop(3) } },
 };
 
 const images = import.meta.glob("../assets/sidekick/*.{png,svg,webp,jpg,jpeg}", {

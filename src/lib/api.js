@@ -28,9 +28,9 @@ export function summarizeSlides({ courseName, text, images, topics }) {
   return post("/api/slides", { courseName, text, images, topics });
 }
 
-// { courseName, topic, summary, count? } -> { quiz: [...] }
-export function getQuiz({ courseName, topic, summary, count = 4 }) {
-  return post("/api/quiz", { courseName, topic, summary, count });
+// { courseName, topic, summary, count?, difficulty?: "easy" | "medium" | "hard" } -> { quiz: [...] }
+export function getQuiz({ courseName, topic, summary, count = 4, difficulty = "medium" }) {
+  return post("/api/quiz", { courseName, topic, summary, count, difficulty });
 }
 
 // { courseName, topic, summary, mode: "feynman" | "written", answer }

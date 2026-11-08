@@ -12,7 +12,7 @@ import confetti from "canvas-confetti";
 //   value     0-100 (`percent` also works, for the old stub)
 //   size      outer size in px (default 132)
 //   stroke    ring thickness in px (default 12)
-//   color     progress color (default Sparky yellow)
+//   color     progress color (default Jepi yellow)
 //   track     background ring color (default translucent white)
 //   label     accessible name (default "Today's progress")
 

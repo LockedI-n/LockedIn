@@ -20,9 +20,9 @@ function getStatus(habit) {
 
 const STATUS = {
     todo: { label: "Not started", badge: "bg-ink/10 text-ink" },
-    studied: { label: "Studied · 50%", badge: "bg-teal/60 text-ink" },
+    studied: { label: "Half done", badge: "bg-teal/60 text-ink" },
     retry: { label: "Needs another try", badge: "bg-coral/20 text-danger-dark" },
-    passed: { label: "Passed · 100%", badge: "bg-brand/15 text-brand-dark" },
+    passed: { label: "Passed", badge: "bg-brand/15 text-brand-dark" },
 };
 
 const primaryBtn =

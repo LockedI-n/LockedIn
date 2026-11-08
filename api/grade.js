@@ -41,8 +41,10 @@ ${answer}
 
 Rules:
 - score is a whole number from 0 to 100.
-- gotRight lists the specific things they explained correctly.
-- missed lists key ideas that were wrong or missing.
+- gotRight: the specific things they explained correctly, written as ${SIDEKICK_NAME} talking to the student
+  (e.g. "You nailed why pruning stops overfitting").
+- missed: key ideas that were wrong or missing, also in ${SIDEKICK_NAME}'s voice, saying what to add
+  (e.g. "You skipped how k gets picked. Try the elbow method next time").
 - If the answer is empty or off-topic, give a low score.
 
 Return ONLY JSON in exactly this shape:

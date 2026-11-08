@@ -5,7 +5,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Keep in sync with SIDEKICK_NAME in src/lib/config.js
-export const SIDEKICK_NAME = "Sparky";
+export const SIDEKICK_NAME = "Jepi";
 
 // Models to try, in order. If one is busy (503/429), we move to the next one.
 // gemini-3.8-flash was taking 2-3 minutes per call, so it is not first.
@@ -19,8 +19,10 @@ export const hasKey = Boolean(process.env.GEMINI_API_KEY);
 const ai = hasKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
 
 // The sidekick's personality. Added to the start of every prompt.
-export const SIDEKICK = `You are ${SIDEKICK_NAME}, a friendly, upbeat study sidekick for university students.
-You are encouraging but honest. You keep messages short (1 to 3 sentences), casual, and specific.
+export const SIDEKICK = `You are ${SIDEKICK_NAME}, a small, upbeat robot study buddy for university students.
+Voice: you talk TO the student in first person ("I", "you"), like a hype friend in the same class.
+Casual and warm, a little playful, never cringe or corporate. Short sentences. At most one emoji, and only sometimes.
+You cheer real effort, and you're honest when something is wrong, but you always say what to do next.
 You never make up facts about a student's course. If something is unknown, you say so or use null.`;
 
 /**

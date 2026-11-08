@@ -15,10 +15,12 @@ const savedUrl = () => {
   }
 };
 
-export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
+// onImportAll(courses) gets every imported course: [{ name, weights }]. Each is saved as its own course.
+export default function CanvasPanel({ busy, setBusy, onImportAll, onError }) {
   const [baseUrl, setBaseUrl] = useState(savedUrl);
   const [token, setToken] = useState("");
   const [courses, setCourses] = useState(null);
+  const [status, setStatus] = useState({}); // canvas id -> "added" | "skipped" | "failed"
   const [showHelp, setShowHelp] = useState(false);
 
   async function loadCourses(e) {
@@ -32,7 +34,11 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
       } catch {
         // remembering the address is only a convenience
       }
-      if (!courses.length) onError("Canvas didn't return any active courses for this account.");
+      if (!courses.length) {
+        onError("Canvas didn't return any active courses for this account.");
+        return;
+      }
+      await importAll(courses);
     } catch (err) {
       onError(err.message);
     } finally {
@@ -40,16 +46,25 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
     }
   }
 
-  async function importCourse(c) {
-    setBusy(`Importing ${c.code || c.name} from Canvas...`);
-    try {
-      const { course } = await canvasCourse({ baseUrl, token: token.trim(), courseId: c.id });
-      onImport(course);
-    } catch (err) {
-      onError(err.message);
-    } finally {
-      setBusy("");
+  // Import every course. Courses with no graded work (clubs, co-op hubs) are skipped.
+  async function importAll(list) {
+    const imported = [];
+    const next = {};
+    for (const [i, c] of list.entries()) {
+      setBusy(`Importing ${c.code || c.name} from Canvas (${i + 1} of ${list.length})...`);
+      try {
+        const { course } = await canvasCourse({ baseUrl, token: token.trim(), courseId: c.id });
+        if (course.weights.length) {
+          imported.push(course);
+          next[c.id] = "added";
+        } else next[c.id] = "skipped";
+      } catch {
+        next[c.id] = "failed";
+      }
+      setStatus({ ...next });
     }
+    if (imported.length) onImportAll(imported);
+    else onError("None of your Canvas courses have graded work yet, so there was nothing to import.");
   }
 
   return (
@@ -85,7 +100,7 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
 
       <form onSubmit={loadCourses} className="space-y-3">
         <label className="block space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink/60">Canvas address</span>
+          <span className="text-sm font-semibold text-ink/80">Canvas address</span>
           <input
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
@@ -94,7 +109,7 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-ink/60">Access token</span>
+          <span className="text-sm font-semibold text-ink/80">Access token</span>
           <input
             type="password"
             value={token}
@@ -110,25 +125,27 @@ export default function CanvasPanel({ busy, setBusy, onImport, onError }) {
           disabled={!!busy || token.trim().length < 10}
           className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
         >
-          Show my courses
+          Connect and import my courses
         </button>
       </form>
 
       {courses?.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-ink/60">Pick a course to import</div>
+          <div className="text-sm font-semibold text-ink/80">Your Canvas courses</div>
           <ul className="space-y-2">
             {courses.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => importCourse(c)}
-                  disabled={!!busy}
-                  className="w-full rounded-lg bg-mist px-3 py-2 text-left text-sm hover:bg-line disabled:opacity-40"
-                >
+              <li key={c.id} className="flex items-center justify-between gap-3 rounded-lg bg-mist px-3 py-2 text-sm">
+                <div className="min-w-0">
                   <div className="font-medium">{c.code || c.name}</div>
-                  {c.code && c.code !== c.name && <div className="text-xs text-ink/60">{c.name}</div>}
-                </button>
+                  {c.code && c.code !== c.name && <div className="truncate text-xs text-ink/60">{c.name}</div>}
+                </div>
+                <span
+                  className={`shrink-0 text-xs font-semibold ${
+                    status[c.id] === "added" ? "text-brand-dark" : status[c.id] === "failed" ? "text-danger-dark" : "text-ink/50"
+                  }`}
+                >
+                  {{ added: "Added", skipped: "No graded work, skipped", failed: "Couldn't import" }[status[c.id]] ?? "Waiting..."}
+                </span>
               </li>
             ))}
           </ul>
