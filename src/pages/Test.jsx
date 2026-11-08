@@ -1,32 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { getQuiz, gradeAnswer } from "../lib/api.js";
-import { QUIZ_COUNT, MASTERY_THRESHOLD, SIDEKICK_NAME } from "../lib/config.js";
-import Sidekick from "../components/Sidekick.jsx";
-import { topicShare } from "../lib/mastery.js";
+import { sampleCourse } from "../lib/sampleData.js";
+import { QUIZ_COUNT } from "../lib/config.js";
 
 const LETTERS = ["A", "B", "C", "D"];
 
-// The first topic worth testing: the one asked for, else one with a summary, else the first.
-const defaultTopic = (course, wanted) =>
-  course?.topics.find((t) => t.name === wanted)?.name ??
-  course?.topics.find((t) => t.summary)?.name ??
-  course?.topics[0]?.name ??
-  "";
-
-// Two ways to prove it: answer questions, or explain what you understood in your own words.
-// "feynman" grading: Sparky reacts like a friend you're teaching (see api/grade.js).
-const MODE_LABELS = { mcq: "Multiple choice", feynman: "Explain what you understood" };
-
-// Props (App.jsx passes these):
-//   courses          saved courses (from storage)
-//   initialCourseId  course to open (e.g. from a habit's "Prove it")
-//   initialTopic     topic to open
-//   onComplete(result)  called with { courseId, topic, mode, score, ... } when a test finishes
-//   onNavigate(page)    go to another page, e.g. "Dashboard"
-export default function Test({ courses = [], initialCourseId, initialTopic, onComplete, onNavigate = () => {} }) {
-  const [courseId, setCourseId] = useState(initialCourseId ?? courses[0]?.id);
-  const course = courses.find((c) => c.id === courseId) ?? courses[0];
-  const [topicName, setTopicName] = useState(() => defaultTopic(course, initialTopic));
+export default function Test({ course = sampleCourse, onComplete }) {
+  const [topicName, setTopicName] = useState("Decision Trees");
   const [mode, setMode] = useState("mcq");
 
   // Written mode
@@ -59,7 +39,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
   const [error, setError] = useState("");
   const [fallback, setFallback] = useState(false);
 
-  const topic = course?.topics.find((t) => t.name === topicName);
+  const topic = course.topics.find((t) => t.name === topicName);
   const question = quiz[currentQuestion];
 
   // Stop microphone tracks when the component is unmounted.
@@ -178,7 +158,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       onComplete?.({
         courseId: course.id,
         topic: topicName,
-        mode,
+        mode: "written",
         score: result.score,
         total: 100,
         answer,
@@ -456,39 +436,18 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
     ? Math.round((score / quiz.length) * 100)
     : 0;
 
-  if (!course) {
-    return (
-      <section className="space-y-6">
-        <Sidekick mood="nudge" message="Add a course first, then come back and prove what you know!" />
-        <button
-          onClick={() => onNavigate("Add course")}
-          className="rounded-lg bg-brand px-4 py-3 font-semibold text-white hover:bg-brand-dark"
-        >
-          Add a course
-        </button>
-      </section>
-    );
-  }
-
-  const finalScore = gradeResult ? gradeResult.score : submitted ? percentage : null;
-  const sparky =
-    finalScore != null
-      ? finalScore >= MASTERY_THRESHOLD
-        ? { mood: "proud", message: `${finalScore}% on ${topicName}! That counts as passed. Your ring is full for this course.` }
-        : { mood: "nudge", message: `${finalScore}% on ${topicName}. Not there yet, so it'll come back as a habit. Review what you missed!` }
-      : loading || grading
-        ? { mood: "thinking", message: loading ? "Writing your questions..." : "Reading your answer carefully..." }
-        : mode === "feynman"
-          ? { mood: "happy", message: `Tell me what you understood about ${topicName || "this topic"}, in your own words. I'll ask about anything confusing!` }
-          : { mood: "happy", message: "Prove what you know! Pick a topic and a way to be tested." };
-
   return (
     <section className="space-y-6">
-      <Sidekick mood={sparky.mood} message={sparky.message} />
+      <div>
+        <h2 className="text-2xl font-bold">TEST PAGE UPDATED</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Test what you've learned with Sparky.
+        </p>
+      </div>
 
       {/* MODE AND TOPIC SELECTION */}
       {quiz.length === 0 && !gradeResult && (
-        <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
+        <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <div>
             <p className="mb-2 text-sm font-medium">
               Choose a test mode
@@ -537,25 +496,9 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             <label className="mb-2 block text-sm font-medium">
               Course
             </label>
-            {courses.length > 1 ? (
-              <select
-                value={course.id}
-                onChange={(e) => {
-                  const next = courses.find((c) => c.id === e.target.value);
-                  setCourseId(e.target.value);
-                  setTopicName(defaultTopic(next));
-                }}
-                className="w-full rounded-lg border border-line bg-mist px-4 py-3 text-ink outline-none focus:border-brand"
-              >
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="rounded-lg bg-mist px-4 py-3 text-ink/80">{course.name}</div>
-            )}
+            <div className="rounded-lg bg-slate-800 px-4 py-3 text-slate-300">
+              {course.name}
+            </div>
           </div>
 
           <div>
@@ -570,52 +513,33 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               id="topic"
               value={topicName}
               onChange={(e) => setTopicName(e.target.value)}
-              className="w-full rounded-lg border border-line bg-mist px-4 py-3 text-ink outline-none focus:border-brand"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 outline-none focus:border-amber-400"
             >
               {course.topics.map((t) => (
                 <option key={t.name} value={t.name}>
                   {t.name}
-                  {t.score != null ? ` (last score ${t.score}%)` : ""}
                 </option>
               ))}
             </select>
           </div>
 
-          {course.topics.length === 0 && (
-            <div className="space-y-3 rounded-lg bg-cream p-4 ring-1 ring-line">
-              <p className="text-sm text-ink/80">
-                {course.name} has no topics yet, so there's nothing to test. Upload the syllabus or slides first.
-              </p>
-              <button
-                onClick={() => onNavigate("Add course", { courseId: course.id })}
-                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-              >
-                Add topics
-              </button>
-            </div>
-          )}
-
-          {course.topics.length === 0 ? null : topic?.summary ? (
-            <div className="rounded-lg bg-mist p-4">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-brand-dark">
+          {topic?.summary ? (
+            <div className="rounded-lg bg-slate-800/70 p-4">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-400">
                 Topic summary
-                {topicShare(course, topicName) > 0 && (
-                  <span className="ml-2 normal-case text-ink/60">· about {topicShare(course, topicName)}% of your grade</span>
-                )}
               </p>
-              <p className="text-sm leading-relaxed text-ink/80">
+              <p className="text-sm leading-relaxed text-slate-300">
                 {topic.summary}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-ink/60">
-              No lecture summary for this topic yet, so questions will use general course knowledge.
-              Upload slides on the Add course page for better questions.
+            <p className="text-sm text-slate-400">
+              No lecture summary is available for this topic yet.
             </p>
           )}
 
           {error && (
-            <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger-dark">
+            <p className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
               {error}
             </p>
           )}
@@ -624,7 +548,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             <button
               onClick={startQuiz}
               disabled={loading || !topic}
-              className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Generating questions..." : "Generate Quiz"}
             </button>
@@ -633,8 +557,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       )}
 
       {/* WRITTEN RESPONSE */}
-      {mode !== "mcq" && quiz.length === 0 && !gradeResult && (
-        <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
+      {mode === "written" && quiz.length === 0 && !gradeResult && (
+        <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <div>
             <p className="text-sm font-medium text-amber-400">
               {course.name}
@@ -662,7 +586,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             placeholder="Start explaining what you know about this topic..."
             rows={9}
             maxLength={10000}
-            className="w-full resize-y rounded-xl border border-line bg-mist px-4 py-3 text-sm leading-relaxed text-ink outline-none placeholder:text-ink/50 focus:border-brand"
+            className="w-full resize-y rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 focus:border-amber-400"
           />
 
           <div className="flex justify-between text-xs text-slate-500">
@@ -673,7 +597,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           {gradeError && (
-            <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger-dark">
+            <p className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
               {gradeError}
             </p>
           )}
@@ -681,7 +605,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           <button
             onClick={submitWrittenAnswer}
             disabled={grading || !writtenAnswer.trim()}
-            className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {grading
               ? "Evaluating your explanation..."
@@ -835,7 +759,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           {gradeFallback && (
-            <p className="rounded-lg bg-coral/20 p-3 text-sm text-danger-dark">
+            <p className="rounded-lg bg-amber-400/10 p-3 text-sm text-amber-300">
               Sample feedback is being displayed because AI grading is unavailable.
             </p>
           )}
@@ -846,7 +770,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </h3>
 
             {gradeResult.gotRight?.length ? (
-              <ul className="list-disc space-y-2 pl-5 text-sm text-ink/80">
+              <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
                 {gradeResult.gotRight.map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
@@ -864,7 +788,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </h3>
 
             {gradeResult.missed?.length ? (
-              <ul className="list-disc space-y-2 pl-5 text-sm text-ink/80">
+              <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
                 {gradeResult.missed.map((item, index) => (
                   <li key={index}>{item}</li>
                 ))}
@@ -877,18 +801,18 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           {gradeResult.sidekickMessage && (
-            <div className="rounded-xl border border-line bg-white p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark">
-                {SIDEKICK_NAME}'s feedback
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400">
+                Sparky's feedback
               </p>
-              <p className="text-sm leading-relaxed text-ink/80">
+              <p className="text-sm leading-relaxed text-slate-300">
                 {gradeResult.sidekickMessage}
               </p>
             </div>
           )}
 
-          <div className="rounded-xl border border-line bg-white p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/60">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
               Your submitted answer
             </p>
 
@@ -901,15 +825,9 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
           <button
             onClick={resetQuiz}
-            className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white hover:bg-brand-dark"
+            className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
           >
             Try Another Topic
-          </button>
-          <button
-            onClick={() => onNavigate("Dashboard")}
-            className="w-full rounded-lg bg-mist px-4 py-3 font-semibold text-ink hover:bg-line"
-          >
-            Back to Dashboard
           </button>
         </div>
       )}
@@ -919,10 +837,10 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-brand-dark">
+              <p className="text-sm font-medium text-amber-400">
                 {course.name}
               </p>
-              <p className="text-sm text-ink/60">{topicName}</p>
+              <p className="text-sm text-slate-400">{topicName}</p>
             </div>
 
             <span className="text-sm text-slate-400">
@@ -931,23 +849,23 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           {fallback && (
-            <p className="text-xs text-danger-dark">
+            <p className="text-xs text-amber-400">
               Using sample questions because AI generation is unavailable.
             </p>
           )}
 
           {/* Progress bar */}
-          <div className="h-2 overflow-hidden rounded-full bg-mist">
+          <div className="h-2 overflow-hidden rounded-full bg-slate-800">
             <div
-              className="h-full rounded-full bg-brand transition-all"
+              className="h-full rounded-full bg-amber-400 transition-all"
               style={{
                 width: `${((currentQuestion + 1) / quiz.length) * 100}%`,
               }}
             />
           </div>
 
-          <div className="rounded-2xl border border-line bg-white p-5">
-            <p className="mb-3 text-sm font-medium text-ink/60">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <p className="mb-3 text-sm font-medium text-slate-400">
               Question {currentQuestion + 1} of {quiz.length}
             </p>
 
@@ -965,15 +883,15 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                     onClick={() => selectAnswer(index)}
                     className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
                       selected
-                        ? "border-brand bg-brand/10 text-brand-dark"
-                        : "border-line bg-mist hover:border-teal"
+                        ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                        : "border-slate-700 bg-slate-800 hover:border-slate-500"
                     }`}
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${
                         selected
-                          ? "bg-brand text-white"
-                          : "bg-line text-ink/80"
+                          ? "bg-amber-400 text-slate-950"
+                          : "bg-slate-700 text-slate-300"
                       }`}
                     >
                       {LETTERS[index]}
@@ -993,7 +911,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 setCurrentQuestion((previous) => previous - 1)
               }
               disabled={currentQuestion === 0}
-              className="flex-1 rounded-lg bg-mist px-4 py-3 text-sm font-medium hover:bg-line disabled:opacity-30"
+              className="flex-1 rounded-lg bg-slate-800 px-4 py-3 text-sm font-medium hover:bg-slate-700 disabled:opacity-30"
             >
               Previous
             </button>
@@ -1003,7 +921,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 onClick={() =>
                   setCurrentQuestion((previous) => previous + 1)
                 }
-                className="flex-1 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="flex-1 rounded-lg bg-amber-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-300"
               >
                 Next
               </button>
@@ -1011,7 +929,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               <button
                 onClick={submitQuiz}
                 disabled={answeredCount !== quiz.length}
-                className="flex-1 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+                className="flex-1 rounded-lg bg-amber-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-300 disabled:opacity-40"
               >
                 Submit Quiz
               </button>
@@ -1019,7 +937,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           {answeredCount !== quiz.length && (
-            <p className="text-center text-xs text-ink/50">
+            <p className="text-center text-xs text-slate-500">
               Answer all questions before submitting.
             </p>
           )}
@@ -1029,27 +947,27 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       {/* MCQ RESULTS */}
       {quiz.length > 0 && submitted && (
         <div className="space-y-5">
-          <div className="rounded-2xl border border-line bg-white p-6 text-center">
-            <p className="text-sm font-medium text-ink/60">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
+            <p className="text-sm font-medium text-slate-400">
               Quiz completed!
             </p>
 
             <p
               className={`my-3 text-5xl font-bold ${
-                percentage >= MASTERY_THRESHOLD
-                  ? "text-brand-dark"
-                  : "text-coral"
+                percentage >= 70
+                  ? "text-emerald-400"
+                  : "text-amber-400"
               }`}
             >
               {percentage}%
             </p>
 
-            <p className="text-sm text-ink/80">
+            <p className="text-sm text-slate-300">
               You got {score} out of {quiz.length} questions correct.
             </p>
 
-            <p className="mt-2 text-sm text-ink/60">
-              {percentage >= MASTERY_THRESHOLD
+            <p className="mt-2 text-sm text-slate-400">
+              {percentage >= 70
                 ? "Great work! You're making progress."
                 : "Keep practicing! Review the explanations below."}
             </p>
@@ -1064,7 +982,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-line bg-white p-4"
+                  className="rounded-xl border border-slate-800 bg-slate-900 p-4"
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <p className="font-medium">
@@ -1093,10 +1011,10 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                           key={optionIndex}
                           className={`rounded-lg p-3 ${
                             isCorrect
-                              ? "bg-brand/15 text-brand-dark"
+                              ? "bg-emerald-500/10 text-emerald-300"
                               : isSelected
-                                ? "bg-danger/10 text-danger-dark"
-                                : "bg-mist text-ink/60"
+                                ? "bg-rose-500/10 text-rose-300"
+                                : "bg-slate-800 text-slate-400"
                           }`}
                         >
                           <span className="mr-2 font-bold">
@@ -1111,8 +1029,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                     })}
                   </div>
 
-                  <div className="mt-3 rounded-lg bg-mist p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-brand-dark">
+                  <div className="mt-3 rounded-lg bg-slate-800/70 p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-amber-400">
                       Explanation
                     </p>
 
@@ -1127,15 +1045,9 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
           <button
             onClick={resetQuiz}
-            className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white hover:bg-brand-dark"
+            className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 hover:bg-amber-300"
           >
             Try Another Topic
-          </button>
-          <button
-            onClick={() => onNavigate("Dashboard")}
-            className="w-full rounded-lg bg-mist px-4 py-3 font-semibold text-ink hover:bg-line"
-          >
-            Back to Dashboard
           </button>
         </div>
       )}
