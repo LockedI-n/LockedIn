@@ -8,7 +8,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Test from "./pages/Test.jsx";
 import Upload from "./pages/Upload.jsx";
 import { SIDEKICK_NAME } from "./lib/config.js";
-import { loadState, updateState, recordTopicScore } from "./lib/storage.js";
+import { loadState, saveState, updateState, recordTopicScore } from "./lib/storage.js";
+import { buildDemoState } from "./lib/demoData.js";
 
 const TABS = ["Dashboard", "Add course", "Test"];
 
@@ -17,6 +18,11 @@ const ALIASES = { dashboard: "Dashboard", upload: "Add course", "add course": "A
 const tabFor = (name) => ALIASES[String(name).toLowerCase()] ?? "Dashboard";
 
 export default function App() {
+  if (new URLSearchParams(window.location.search).has("demo")) {
+    saveState(buildDemoState());
+    window.history.replaceState(null, "", window.location.pathname);
+  }
+
   // nav = { page, params, n }. n changes on every navigation so the page restarts fresh.
   const [nav, setNav] = useState({ page: "Dashboard", params: {}, n: 0 });
 
