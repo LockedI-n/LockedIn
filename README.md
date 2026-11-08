@@ -9,8 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://lockedin-seven-xi.vercel.app">Live app</a> ·
-  <a href="https://lockedin-seven-xi.vercel.app/?demo">Demo student</a> ·
+  <a href="https://lockedin-seven-xi.vercel.app">Live app</a> |
+  <a href="https://youtu.be/fHYPNzhkvhI">Demo video</a> |
+  <a href="https://lockedin-seven-xi.vercel.app/?demo">Demo student</a>
+  <br />
   Built for the <i>Digital Sidekick</i> hackathon
 </p>
 
@@ -43,6 +45,8 @@ All your data stays in your browser (localStorage). No accounts, no database.
 
 ## Try it in 30 seconds
 
+**Watch the demo:** [youtu.be/fHYPNzhkvhI](https://youtu.be/fHYPNzhkvhI)
+
 1. Open **[lockedin-seven-xi.vercel.app/?demo](https://lockedin-seven-xi.vercel.app/?demo)**. This loads a demo student with two courses, a 6-day streak and a midterm in 4 days.
 2. On the **Dashboard**, click **Prove it** on *Software Design*, take the quiz, and watch the ring and mastery update.
 3. Go to **Add course** and add one of your own courses.
@@ -62,7 +66,7 @@ flowchart LR
     T --> LS
   end
   subgraph Vercel["Vercel serverless /api"]
-    API[syllabus · slides · quiz · grade] --> G[Gemini]
+    API[syllabus, slides, quiz, grade] --> G[Gemini]
     CV[canvas] --> C[Canvas LMS API]
     TR[transcribe] --> E[ElevenLabs speech-to-text]
   end
