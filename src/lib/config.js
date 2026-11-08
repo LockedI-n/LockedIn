@@ -14,7 +14,7 @@ export const RING_PASSED = 100; // passed a test
 export const STORAGE_KEY = "study-sidekick";
 
 // Default number of MCQ questions per quiz.
-export const QUIZ_COUNT = 4;
+export const QUIZ_COUNT = 5;
 
 // Theme colors (Tailwind class names). The palette itself is in src/index.css.
 export const COLORS = {

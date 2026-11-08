@@ -61,7 +61,11 @@ export default function App() {
     <div className="min-h-screen bg-canvas text-ink">
       <div className={`mx-auto space-y-6 px-4 py-8 ${nav.page === "Dashboard" ? "max-w-5xl" : "max-w-2xl"}`}>
         <header className="flex items-center gap-3">
-          <img src={mascot} alt={SIDEKICK_NAME} className="h-10 w-auto" />
+          <span className="jepi-halo h-11 w-11 shrink-0">
+            <span className="grid h-full w-full place-items-center p-1.5">
+              <img src={mascot} alt={SIDEKICK_NAME} className="h-full w-full object-contain" />
+            </span>
+          </span>
           <h1 className="text-2xl font-bold tracking-tight">
             Locked<span className="text-brand-dark">In</span>
           </h1>

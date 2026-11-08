@@ -8,7 +8,7 @@ import HabitCard from "../components/HabitCard";
 import { courseMastery, weakTopicsByImpact, topicShare } from "../lib/mastery";
 import { removeCourse } from "../lib/storage";
 import {
-    autoShield, dailyPep, deadlineNudge, isDayOff, lastSevenDays, rewards, streakLength, takeDayOff,
+    autoShield, dailyPep, deadlineNudge, isDayOff, lastSevenDays, nextDeadline, rewards, streakLength, takeDayOff,
     MAX_HELD, REWARD_RULES,
 } from "../lib/motivation";
 
@@ -112,22 +112,33 @@ function normalize(raw) {
 
 /* ---------- sidekick voice ---------- */
 
+// The top panel's colour follows what Jepi is saying (all from the mascot's palette).
+//   panel: background + text,  ring: progress colour,  track: ring background,  note: small text
+const TONES = {
+    calm: { panel: "bg-teal text-ink", ring: "#2FAD8F", track: "rgba(11,16,51,0.10)", note: "text-ink/70" },
+    heads: { panel: "bg-coral text-ink", ring: "#0B1033", track: "rgba(11,16,51,0.15)", note: "text-ink/75" },
+    urgent: { panel: "bg-danger text-white", ring: "#FFFFFF", track: "rgba(255,255,255,0.25)", note: "text-white/85" },
+    safe: { panel: "bg-navy text-white", ring: "#00FFCF", track: "rgba(255,255,255,0.2)", note: "text-white/80" },
+    win: { panel: "bg-brand text-white", ring: "#FFFFFF", track: "rgba(255,255,255,0.25)", note: "text-white/85" },
+};
+
 // What Jepi says on the Dashboard. Most urgent thing first.
 function sidekickSays({ state, todays, dailyPct, streak, weakCount, dayOff, shieldsUsed }) {
     if (!state.courses.length)
-        return { mood: "idle", message: `Hey, I'm ${SIDEKICK_NAME}! Add a course and I'll plan your study days for you.` };
+        return { mood: "idle", tone: "calm", message: `Hey, I'm ${SIDEKICK_NAME}! Add a course and I'll plan your study days for you.` };
     if (shieldsUsed)
-        return { mood: "proud", message: `You missed a day, so I used ${shieldsUsed === 1 ? "a streak shield" : `${shieldsUsed} shields`}. Your ${streak}-day streak is safe. Let's keep it going!` };
-    if (dayOff) return { mood: "happy", message: "Day off! You earned it. Your streak is safe, so go touch grass." };
+        return { mood: "proud", tone: "safe", message: `You missed a day, so I used ${shieldsUsed === 1 ? "a streak shield" : `${shieldsUsed} shields`}. Your ${streak}-day streak is safe. Let's keep it going!` };
+    if (dayOff) return { mood: "happy", tone: "win", message: "Day off! You earned it. Your streak is safe, so go touch grass." };
     if (todays.length && dailyPct === 100)
-        return { mood: "proud", message: streak > 1 ? `All done! ${streak} days in a row. I'm honestly so proud of you.` : "All done today! Come back tomorrow and we'll stack the streak." };
+        return { mood: "proud", tone: "win", message: streak > 1 ? `All done! ${streak} days in a row. I'm honestly so proud of you.` : "All done today! Come back tomorrow and we'll stack the streak." };
     const deadline = deadlineNudge(state);
-    if (deadline && !todays.some((h) => h.studied)) return { mood: "nudge", message: deadline };
-    if (todays.some((h) => h.studied && !h.tested)) return { mood: "happy", message: "You studied. Now prove it with a quick test and fill that ring!" };
+    if (deadline && !todays.some((h) => h.studied))
+        return { mood: "nudge", tone: nextDeadline(state).days <= 1 ? "urgent" : "heads", message: deadline };
+    if (todays.some((h) => h.studied && !h.tested)) return { mood: "happy", tone: "calm", message: "You studied. Now prove it with a quick test and fill that ring!" };
     if (weakCount > 0)
-        return { mood: "nudge", message: `${weakCount} topic${weakCount > 1 ? "s are" : " is"} under ${MASTERY}%. I put the one hurting your grade most first.` };
-    if (streak > 0) return { mood: "nudge", message: `${streak}-day streak on the line. One topic keeps it alive. ${dailyPep()}` };
-    return { mood: "happy", message: dailyPep() };
+        return { mood: "nudge", tone: "calm", message: `${weakCount} topic${weakCount > 1 ? "s are" : " is"} under ${MASTERY}%. I put the one hurting your grade most first.` };
+    if (streak > 0) return { mood: "nudge", tone: "calm", message: `${streak}-day streak on the line. One topic keeps it alive. ${dailyPep()}` };
+    return { mood: "happy", tone: "calm", message: dailyPep() };
 }
 
 /* ---------- page ---------- */
@@ -160,7 +171,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
         0
     );
 
-    const { mood, message } = sidekickSays({ state, todays, dailyPct, streak, weakCount, dayOff, shieldsUsed });
+    const { mood, message, tone = "calm" } = sidekickSays({ state, todays, dailyPct, streak, weakCount, dayOff, shieldsUsed });
 
     const deleteCourse = (course) => {
         if (window.confirm(`Delete ${course.name}? Its topics, scores and habits will be removed.`))
@@ -190,7 +201,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                     <button
                         type="button"
                         onClick={() => onNavigate("upload")}
-                        className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        className="hidden rounded-full bg-ink px-4 py-2 sm:inline-flex text-sm font-semibold text-white transition hover:bg-navy focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
                         Add course
                     </button>
@@ -199,7 +210,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                 {/* Sidekick + daily ring */}
                 <section
                     aria-label="Today's progress"
-                    className="mt-6 grid items-center gap-6 rounded-[2rem] bg-teal p-6 text-ink sm:grid-cols-[1fr_auto] sm:p-8"
+                    className={`mt-6 grid items-center gap-6 rounded-[2rem] p-6 transition-colors duration-500 sm:grid-cols-[1fr_auto] sm:p-8 ${TONES[tone].panel}`}
                 >
                     <div className="flex items-center gap-5">
                         <div className="w-24 shrink-0 sm:w-32">
@@ -213,8 +224,8 @@ export default function Dashboard({ onNavigate = () => {} }) {
                     </div>
 
                     <div className="mx-auto flex flex-col items-center gap-2">
-                        <ProgressRing value={dailyPct} size={132} />
-                        <p className="max-w-[12rem] text-center text-xs text-ink/70">
+                        <ProgressRing value={dailyPct} size={132} color={TONES[tone].ring} track={TONES[tone].track} />
+                        <p className={`max-w-[12rem] text-center text-xs ${TONES[tone].note}`}>
                             {dayOff ? "Day off. Today counts as done." : "Studied fills half. Passing a test fills it all."}
                         </p>
                     </div>
@@ -316,7 +327,7 @@ function StreakStrip({ state, streak, dayOff, onDayOff }) {
                 ))}
             </ol>
 
-            <div className="flex flex-wrap gap-3 lg:justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end">
                 <Reward icon={<ShieldIcon />} label="Streak shields" have={r.shields} hint={r.shields >= MAX_HELD ? "Full" : `${r.toNextShield} more study day${r.toNextShield === 1 ? "" : "s"} for the next`} tone="bg-navy text-white" />
                 <Reward icon={<SunIcon />} label="Days off" have={r.daysOff} hint={r.daysOff >= MAX_HELD ? "Full" : `${r.toNextDayOff} more passed test${r.toNextDayOff === 1 ? "" : "s"} for the next`} tone="bg-teal text-ink">
                     {r.daysOff > 0 && !dayOff && (
@@ -333,7 +344,7 @@ function StreakStrip({ state, streak, dayOff, onDayOff }) {
 
 function Reward({ icon, label, have, hint, tone, children }) {
     return (
-        <div className="min-w-[10.5rem] rounded-2xl bg-canvas p-3">
+        <div className="min-w-0 flex-1 rounded-2xl bg-canvas p-3 sm:min-w-[10.5rem] sm:flex-none">
             <div className="flex items-center gap-2">
                 <span className={`grid h-7 w-7 place-items-center rounded-lg ${tone}`}>{icon}</span>
                 <span className="text-sm font-semibold">{label}</span>

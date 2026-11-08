@@ -55,7 +55,7 @@ export default function JepiBuddy() {
             initial={reduce ? false : { opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8 }}
-            className="relative mb-6 max-w-[16rem] rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink shadow-lg ring-1 ring-line"
+            className="relative mb-6 max-w-[min(16rem,calc(100vw-6rem))] rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink shadow-lg ring-1 ring-line"
           >
             {pickLine(n)}
             <div className="mt-2 flex gap-3 text-xs font-semibold">
@@ -74,11 +74,13 @@ export default function JepiBuddy() {
         onClick={tap}
         aria-label={`Talk to ${SIDEKICK_NAME}`}
         title={`Talk to ${SIDEKICK_NAME}`}
-        className="h-16 w-16 shrink-0 rounded-full bg-white p-2 shadow-lg ring-1 ring-line"
+        className="jepi-halo h-12 w-12 shrink-0 shadow-lg sm:h-16 sm:w-16"
         whileHover={reduce ? undefined : { scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
       >
-        <img src={mascot} alt="" className="h-full w-full object-contain" />
+        <span className="grid h-full w-full place-items-center p-1.5 sm:p-2">
+          <img src={mascot} alt="" className="h-full w-full object-contain" />
+        </span>
       </motion.button>
     </div>
   );

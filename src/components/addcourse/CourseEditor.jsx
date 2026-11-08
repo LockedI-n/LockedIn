@@ -52,8 +52,8 @@ export default function CourseEditor({ course, onChange, manualOpen, onDelete })
 
   return (
     <div className="space-y-5 rounded-2xl bg-white p-4 ring-1 ring-line">
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h3 className="text-lg font-semibold">{course.name}</h3>
           {onDelete && (
             <button type="button" onClick={onDelete} className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-danger-dark ring-1 ring-danger/30 hover:bg-danger/10">
@@ -84,8 +84,8 @@ export default function CourseEditor({ course, onChange, manualOpen, onDelete })
               )}
               <ul className="divide-y divide-line">
                 {sec.items.map((w) => (
-                <li key={w.item} className="flex flex-wrap items-center gap-2 py-2">
-                  <span className="min-w-0 flex-1 text-sm">
+                <li key={w.item} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2.5">
+                  <span className="min-w-0 basis-full text-sm sm:basis-auto sm:flex-1">
                     {w.item}
                   </span>
                   <input
@@ -117,9 +117,9 @@ export default function CourseEditor({ course, onChange, manualOpen, onDelete })
         </div>
         {manualOpen && (
           <form onSubmit={addWeight} className="flex flex-wrap items-center gap-2 rounded-lg bg-mist p-2">
-            <input value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. Midterm" aria-label="Item name" className={`${input} min-w-0 flex-1`} />
+            <input value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. Midterm" aria-label="Item name" className={`${input} min-w-0 basis-full sm:basis-auto sm:flex-1`} />
             <input type="number" min="0" max="100" step="0.1" value={percent} onChange={(e) => setPercent(e.target.value)} placeholder="%" aria-label="Percent" className={`${input} w-20`} />
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Due date" className={input} />
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Due date" className={`${input} min-w-0 flex-1 sm:flex-none`} />
             <button type="submit" className="rounded-md bg-brand px-3 py-1 text-sm font-semibold text-white hover:bg-brand-dark">
               Add item
             </button>

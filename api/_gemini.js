@@ -23,7 +23,19 @@ export const SIDEKICK = `You are ${SIDEKICK_NAME}, a small, upbeat robot study b
 Voice: you talk TO the student in first person ("I", "you"), like a hype friend in the same class.
 Casual and warm, a little playful, never cringe or corporate. Short sentences. At most one emoji, and only sometimes.
 You cheer real effort, and you're honest when something is wrong, but you always say what to do next.
-You never make up facts about a student's course. If something is unknown, you say so or use null.`;
+You never make up facts about a student's course. If something is unknown, you say so or use null.
+Never use em dashes or en dashes. Use commas, periods or "to" instead.`;
+
+// Belt and braces: replace any em dash (U+2014) or en dash (U+2013) the model still writes,
+// in every string of the result. A dash between numbers becomes "-" (weeks 1-3); any other
+// dash becomes a comma ("Spot on, K-means").
+export function noDashes(value) {
+  if (typeof value === "string")
+    return value.replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, "$1-$2").replace(/\s*[\u2013\u2014]\s*/g, ", ").replace(/,\s*([.,!?])/g, "$1");
+  if (Array.isArray(value)) return value.map(noDashes);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, noDashes(v)]));
+  return value;
+}
 
 /**
  * Ask Gemini for a JSON answer.
@@ -56,7 +68,7 @@ export async function askJSON(prompt, parts = []) {
   const text = response.text ?? "";
   // Sometimes models wrap JSON in ``` fences. Strip them just in case.
   const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
-  return JSON.parse(cleaned);
+  return noDashes(JSON.parse(cleaned));
 }
 
 // Small helper: Vercel usually parses JSON bodies, but be safe if it arrives as a string.
