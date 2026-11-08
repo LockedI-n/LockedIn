@@ -1,6 +1,10 @@
 // POST /api/syllabus
-// Input:  { courseName, text?, fileBase64?, mimeType? }
-// Output: { weights: [{ item, percent, date }], topics: [{ name, week, summary, score }] }
+// Input:  { courseName, text?, fileBase64?, mimeType? }   (file can be a PDF or a screenshot: image/png, image/jpeg, image/webp)
+// Output: { weights: [{ item, percent, date, covers }], topics: [{ name, week, summary, score }] }
+//   group:  the heading an item sits under when the syllabus breaks a total into parts
+//           (e.g. "Course project" for "Project proposal 10%"), or null.
+//   covers: topic names that item tests (e.g. a midterm covering weeks 1-6), or null if the syllabus doesn't say.
+//           Used to weight mastery: topics on heavier assessments count more.
 // Owner: Person 2 (AI and Backend).
 
 import { askJSON, hasKey, readBody } from "./_gemini.js";
@@ -26,21 +30,30 @@ Rules:
 - percent is a number (no % sign).
 - week is a number, or null if not given.
 - summary is always "" and score is always null (filled in later).
+- group: if the syllabus lists parts under a heading (e.g. "Course project: proposal 10%, report 20%",
+  or "Exams: midterm 20%, final 40%"), set group to that heading. List the PARTS as items, not the heading total.
+  Otherwise null.
+- covers: if the syllabus says which topics or weeks an item tests (e.g. "Midterm: weeks 1-6", "Final is cumulative"),
+  list the exact topic names from your topics list it covers. If it doesn't say, use null. Never guess.
 
 Return ONLY JSON in exactly this shape:
 {
-  "weights": [{ "item": "Final", "percent": 40, "date": "2026-12-10" }],
+  "weights": [{ "item": "Midterm", "percent": 20, "date": "2026-10-22", "group": "Exams", "covers": ["Decision Trees", "Clustering"] }, { "item": "Project proposal", "percent": 10, "date": null, "group": "Course project", "covers": null }],
   "topics": [{ "name": "Decision Trees", "week": 5, "summary": "", "score": null }]
 }
 
-${text ? `Syllabus text:\n${text}` : "The syllabus is attached as a file."}`;
+${text ? `Syllabus text:\n${text}` : "The syllabus is attached as a file or image. It may be a screenshot of only part of it (for example just the grading table, or a Canvas page). Extract whatever is visible and return empty lists for anything not shown."}`;
 
   const parts = fileBase64 ? [{ inlineData: { data: fileBase64, mimeType: mimeType || "application/pdf" } }] : [];
 
   try {
     const data = await askJSON(prompt, parts);
     return res.status(200).json({
-      weights: Array.isArray(data.weights) ? data.weights : [],
+      weights: (Array.isArray(data.weights) ? data.weights : []).map((w) => ({
+        ...w,
+        group: typeof w.group === "string" && w.group.trim() ? w.group.trim() : null,
+        covers: Array.isArray(w.covers) ? w.covers.filter((c) => typeof c === "string") : null,
+      })),
       topics: Array.isArray(data.topics) ? data.topics : [],
     });
   } catch (err) {

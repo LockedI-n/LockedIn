@@ -1,8 +1,8 @@
-# Study Sidekick (Streakly)
+# Study Sidekick (LockedIn)
 
 > *"Meet Sparky, your study sidekick. It reads your syllabus and slides, tells you what to study today, and then makes you prove it."*
 
-Study Sidekick is a study companion for university students, built for the "Digital Sidekick" hackathon theme. A student adds a course and uploads the syllabus, and Gemini pulls out the grading weights, assessment dates, and topics. The student uploads lecture slides or images and gets a short summary per topic. The sidekick sets a daily study habit for each course. After studying, the student proves it with an MCQ quiz, a written answer, or the Feynman method (teaching the sidekick). Progress shows as a daily ring (studied = 50%, passed a test = 100%) and a course mastery bar weighted by grading weight. Low scores turn into tomorrow's habits. All data lives in localStorage. No database, no external course API.
+LockedIn is a study companion for university students, built for the "Digital Sidekick" hackathon theme. A student adds a course and uploads the syllabus, and Gemini pulls out the grading weights, assessment dates, and topics. The student uploads lecture slides or images and gets a short summary per topic. The sidekick sets a daily study habit for each course. After studying, the student proves it with an MCQ quiz, a written answer, or the Feynman method (teaching the sidekick). Progress shows as a daily ring (studied = 50%, passed a test = 100%) and a course mastery bar weighted by grading weight. Low scores turn into tomorrow's habits. All data lives in localStorage. No database, no external course API.
 
 The sidekick's name lives in `src/lib/config.js` (`SIDEKICK_NAME`) and `api/_gemini.js`. Change both if we rename it.
 
@@ -74,7 +74,11 @@ Everyone builds against these shapes. If you need to change one, tell the team f
 {
   id: "cmpt459",
   name: "CMPT 459",
-  weights: [{ item: "Final", percent: 40, date: "2026-12-10" }],  // date may be null
+  weights: [{ item: "Final", percent: 40, date: "2026-12-10", covers: null }],  // date may be null
+  // group (optional): heading an item sits under, e.g. "Course project" for "Project proposal 10%".
+  //   A total like "Project 40%" from another source is dropped when its group's parts add up to it.
+  // covers (optional): topic names this item tests, e.g. ["Clustering"]. null = unknown, so it counts for all topics.
+  // Mastery is weighted by this: see src/lib/mastery.js.
   topics: [{ name: "Decision Trees", week: 5, summary: "", score: null }]
 }
 
