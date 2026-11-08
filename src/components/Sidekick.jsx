@@ -163,7 +163,11 @@ export default function Sidekick({ message, mood = "happy", size }) {
             }}
         >
             {custom ? (
-                <img src={custom} alt={label} className="block h-auto w-full" />
+                <div className="jepi-halo">
+                    <div className="grid aspect-square place-items-center p-[14%]">
+                        <img src={custom} alt={label} className="block h-auto w-full" />
+                    </div>
+                </div>
             ) : (
                 <Character mood={safeMood} label={label} />
             )}

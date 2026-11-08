@@ -38,6 +38,17 @@ h1, h2, h3, .font-display {
 
 .tabular { font-variant-numeric: tabular-nums; }
 
+/* Jepi's halo: a ring in all six of the mascot's colours, used wherever Jepi appears. */
+.jepi-halo {
+  border-radius: 9999px;
+  padding: 3px;
+  background: conic-gradient(from 210deg, #2fad8f, #8ad1d6, #00ffcf, #fe7e84, #fd4e53, #000090, #2fad8f);
+}
+.jepi-halo > * {
+  border-radius: 9999px;
+  background: #ffffff;
+}
+
 :focus-visible { outline: 2px solid var(--color-navy); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {

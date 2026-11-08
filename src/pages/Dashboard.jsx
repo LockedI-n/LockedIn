@@ -190,7 +190,7 @@ export default function Dashboard({ onNavigate = () => {} }) {
                     <button
                         type="button"
                         onClick={() => onNavigate("upload")}
-                        className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        className="hidden rounded-full bg-ink px-4 py-2 sm:inline-flex text-sm font-semibold text-white transition hover:bg-navy focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
                         Add course
                     </button>
@@ -316,7 +316,7 @@ function StreakStrip({ state, streak, dayOff, onDayOff }) {
                 ))}
             </ol>
 
-            <div className="flex flex-wrap gap-3 lg:justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end">
                 <Reward icon={<ShieldIcon />} label="Streak shields" have={r.shields} hint={r.shields >= MAX_HELD ? "Full" : `${r.toNextShield} more study day${r.toNextShield === 1 ? "" : "s"} for the next`} tone="bg-navy text-white" />
                 <Reward icon={<SunIcon />} label="Days off" have={r.daysOff} hint={r.daysOff >= MAX_HELD ? "Full" : `${r.toNextDayOff} more passed test${r.toNextDayOff === 1 ? "" : "s"} for the next`} tone="bg-teal text-ink">
                     {r.daysOff > 0 && !dayOff && (
@@ -333,7 +333,7 @@ function StreakStrip({ state, streak, dayOff, onDayOff }) {
 
 function Reward({ icon, label, have, hint, tone, children }) {
     return (
-        <div className="min-w-[10.5rem] rounded-2xl bg-canvas p-3">
+        <div className="min-w-0 flex-1 rounded-2xl bg-canvas p-3 sm:min-w-[10.5rem] sm:flex-none">
             <div className="flex items-center gap-2">
                 <span className={`grid h-7 w-7 place-items-center rounded-lg ${tone}`}>{icon}</span>
                 <span className="text-sm font-semibold">{label}</span>
