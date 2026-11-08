@@ -10,8 +10,8 @@
 
 <p align="center">
   <a href="https://lockedin-seven-xi.vercel.app">Live app</a> |
-  <a href="https://youtu.be/fHYPNzhkvhI">Demo video</a> |
-  <a href="https://lockedin-seven-xi.vercel.app/?demo">Demo student</a>
+  <a href="https://lockedin-seven-xi.vercel.app/?demo">Demo student</a> |
+  <a href="https://youtu.be/fHYPNzhkvhI">How to get a Canvas token (video)</a>
   <br />
   Built for the <i>Digital Sidekick</i> hackathon
 </p>
@@ -45,7 +45,6 @@ All your data stays in your browser (localStorage). No accounts, no database.
 
 ## Try it in 30 seconds
 
-**Watch the demo:** [youtu.be/fHYPNzhkvhI](https://youtu.be/fHYPNzhkvhI)
 
 1. Open **[lockedin-seven-xi.vercel.app/?demo](https://lockedin-seven-xi.vercel.app/?demo)**. This loads a demo student with two courses, a 6-day streak and a midterm in 4 days.
 2. On the **Dashboard**, click **Prove it** on *Software Design*, take the quiz, and watch the ring and mastery update.
@@ -123,7 +122,7 @@ Put them in `.env.local` locally, and in **Vercel, then Settings, then Environme
 
 ### Getting a Canvas token (for students)
 
-Canvas, then **Account**, then **Settings**, then **Approved Integrations**, then **+ New Access Token**. Copy it and paste it on the Add course page. The default Canvas address is SFU's (`CANVAS_DEFAULT_URL` in `src/lib/config.js`), and students can change it.
+Canvas, then **Account**, then **Settings**, then **Approved Integrations**, then **+ New Access Token**. Copy it and paste it on the Add course page. There's a short video walkthrough: [youtu.be/fHYPNzhkvhI](https://youtu.be/fHYPNzhkvhI) (also linked in the app, under "How do I get a Canvas token?"). The default Canvas address is SFU's (`CANVAS_DEFAULT_URL` in `src/lib/config.js`), and students can change it.
 
 ## Project structure
 
