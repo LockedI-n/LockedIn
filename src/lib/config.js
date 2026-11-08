@@ -1,7 +1,7 @@
 // Shared app config. Change the sidekick name here and it updates everywhere.
 // Owner: Person 3 (but anyone can tweak values).
 
-export const SIDEKICK_NAME = "Sparky";
+export const SIDEKICK_NAME = "Jepi";
 
 // A topic counts as "mastered" when its score is at or above this.
 export const MASTERY_THRESHOLD = 70;

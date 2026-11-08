@@ -16,9 +16,30 @@
   --color-danger: #fd4e53;      /* mascot's red: errors, wrong answers */
   --color-danger-dark: #c2363b; /* red text that stays readable */
   --color-cream: #fdfcf0;       /* mascot's teeth: soft cards */
+
+  /* Type: a chunky, slightly quirky display face (like Jepi) for headings and big numbers,
+     and a clean, friendly face for everything else. */
+  --font-display: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--color-navy); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

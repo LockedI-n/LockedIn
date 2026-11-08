@@ -7,6 +7,7 @@ import mascot from "./assets/sidekick/mascot.svg";
 import Dashboard from "./pages/Dashboard.jsx";
 import Test from "./pages/Test.jsx";
 import Upload from "./pages/Upload.jsx";
+import JepiBuddy from "./components/JepiBuddy.jsx";
 import { SIDEKICK_NAME } from "./lib/config.js";
 import { loadState, saveState, updateState, recordTopicScore } from "./lib/storage.js";
 import { buildDemoState } from "./lib/demoData.js";
@@ -80,8 +81,9 @@ export default function App() {
           ))}
         </nav>
 
-        <main>{renderPage()}</main>
+        <main className="pb-24">{renderPage()}</main>
       </div>
+      <JepiBuddy />
     </div>
   );
 }

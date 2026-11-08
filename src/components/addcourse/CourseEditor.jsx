@@ -8,7 +8,7 @@ import { topicShare } from "../../lib/mastery.js";
 
 const input = "rounded-md bg-mist px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand";
 
-export default function CourseEditor({ course, onChange, manualOpen }) {
+export default function CourseEditor({ course, onChange, manualOpen, onDelete }) {
   const [item, setItem] = useState("");
   const [percent, setPercent] = useState("");
   const [date, setDate] = useState("");
@@ -53,7 +53,14 @@ export default function CourseEditor({ course, onChange, manualOpen }) {
   return (
     <div className="space-y-5 rounded-2xl bg-white p-4 ring-1 ring-line">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-lg font-semibold">{course.name}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold">{course.name}</h3>
+          {onDelete && (
+            <button type="button" onClick={onDelete} className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-danger-dark ring-1 ring-danger/30 hover:bg-danger/10">
+              Delete course
+            </button>
+          )}
+        </div>
         {course.weights.length > 0 && (
           <span className={`text-sm font-medium ${Math.abs(total - 100) <= 1 ? "text-brand-dark" : "text-danger-dark"}`}>
             Grades add up to {total}%

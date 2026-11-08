@@ -9,19 +9,22 @@ import Sidekick from "../components/Sidekick.jsx";
 import CanvasPanel from "../components/addcourse/CanvasPanel.jsx";
 import FilePanel from "../components/addcourse/FilePanel.jsx";
 import CourseEditor from "../components/addcourse/CourseEditor.jsx";
-import { loadState } from "../lib/storage.js";
+import { loadState, updateState, removeCourse } from "../lib/storage.js";
 import { courseIdFor, emptyCourse, mergeSummaries, mergeTopics, mergeWeights, saveCourse, totalPercent } from "../lib/courses.js";
 
 const OPTIONS = [
   { id: "canvas", title: "Connect Canvas", hint: "Deadlines and grade weights, automatically" },
-  { id: "pdf", title: "Upload PDFs", hint: "Syllabus and lecture slides" },
+  { id: "pdf", title: "Upload files", hint: "PDF or PowerPoint, several at once" },
   { id: "screenshot", title: "Screenshot", hint: "A photo of the grading table or a slide" },
   { id: "manual", title: "Enter by hand", hint: "Add a missing date, item or topic" },
 ];
 
-// What Sparky says after each step.
+// What Jepi says after each step.
 function sparkyFor(course, event) {
-  if (!course) return { mood: "happy", message: "Let's add a course! Type its name, then pick any option below. You can mix them." };
+  if (!course && event?.type === "canvas")
+    return { mood: "proud", message: `Boom, ${event.count} courses pulled from Canvas! Tap one below to check it, then add slides so I can quiz you.` };
+  if (!course && event?.type === "deleted") return { mood: "happy", message: `${event.name} is gone. One less thing on your plate!` };
+  if (!course) return { mood: "happy", message: "Let's add a course! Type its name, or connect Canvas and I'll grab them all." };
   const missingDates = course.weights.filter((w) => !w.date).length;
   const total = totalPercent(course);
   const withSummary = course.topics.filter((t) => t.summary).length;
@@ -29,10 +32,14 @@ function sparkyFor(course, event) {
 
   switch (event?.type) {
     case "canvas":
-      return {
-        mood: "proud",
-        message: `Pulled ${event.count} deadlines from Canvas!${biggest ? ` ${biggest.item} is worth ${biggest.percent}%, so we'll start on it early.` : ""} Upload slides next so I can quiz you.`,
-      };
+      return event.count === 1
+        ? {
+            mood: "proud",
+            message: `Got ${course.name} from Canvas!${biggest ? ` ${biggest.item} is worth ${biggest.percent}%, so we start on it early.` : ""} Drop in your slides next so I can quiz you.`,
+          }
+        : { mood: "proud", message: `Boom, ${event.count} courses pulled from Canvas! Tap one below to check it, then add slides so I can quiz you.` };
+    case "deleted":
+      return { mood: "happy", message: `${event.name} is gone. One less thing on your plate!` };
     case "syllabus":
       return { mood: "proud", message: `Found ${course.weights.length} graded items and ${course.topics.length} topics. Nice!` };
     case "slides":
@@ -90,31 +97,48 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
     setOpen(showing ? null : id);
   }
 
-  // Save a new version of the course and remember why (for Sparky).
+  // Save a new version of the course and remember why (for Jepi).
   function update(next, why) {
     setCourses(saveCourse(next));
     setEvent(why);
   }
   const onError = (message) => setEvent({ type: "error", message });
 
-  function onCanvasImport(imported) {
-    const targetName = name || imported.name;
-    if (!name) setCourseName(targetName);
-    const base = courses.find((c) => c.id === courseIdFor(targetName)) ?? emptyCourse(targetName);
-    update({ ...base, weights: mergeWeights(base.weights, imported.weights) }, { type: "canvas", count: imported.weights.length });
+  // The latest saved version of a course (several files can finish one after another).
+  const latest = (courseName) => loadState().courses.find((c) => c.id === courseIdFor(courseName)) ?? emptyCourse(courseName);
+
+  // Canvas: every course is saved as its own course, named the way Canvas names it.
+  function onCanvasImportAll(list) {
+    let saved = courses;
+    for (const imported of list) {
+      const base = latest(imported.name);
+      saved = saveCourse({ ...base, weights: mergeWeights(base.weights, imported.weights) });
+    }
+    setCourses(saved);
+    if (list.length === 1) setCourseName(list[0].name);
+    setEvent({ type: "canvas", count: list.length, names: list.map((c) => c.name) });
   }
 
   function onFileResult(kind, result) {
     setSampleWarning(Boolean(result.fallback));
+    const base = latest(name);
     if (kind === "syllabus") {
       update(
-        { ...course, weights: mergeWeights(course.weights, result.weights), topics: mergeTopics(course.topics, result.topics) },
+        { ...base, weights: mergeWeights(base.weights, result.weights), topics: mergeTopics(base.topics, result.topics) },
         { type: "syllabus" }
       );
     } else {
       const topics = result.topics ?? [];
-      update({ ...course, topics: mergeSummaries(course.topics, topics) }, { type: "slides", count: topics.length });
+      update({ ...base, topics: mergeSummaries(base.topics, topics) }, { type: "slides", count: topics.length });
     }
+  }
+
+  function deleteCourse(c) {
+    if (!window.confirm(`Delete ${c.name}? Its topics, scores and habits will be removed.`)) return;
+    setCourses(updateState((s) => removeCourse(s, c.id)).courses);
+    setCourseName("");
+    setOpen(null);
+    setEvent({ type: "deleted", name: c.name });
   }
 
   return (
@@ -149,6 +173,27 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
         </datalist>
       </label>
 
+      {courses.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-ink/50">Your courses:</span>
+          {courses.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => {
+                setCourseName(c.name);
+                setEvent(null);
+              }}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                saved?.id === c.id ? "bg-ink text-white" : "bg-white text-ink ring-1 ring-line hover:ring-brand"
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-2">
       <span className="text-sm font-medium text-ink/80">2. How do you want to add it? Pick one or more</span>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -173,9 +218,9 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
 
       {open && !(open !== "canvas" && !name) && (
         <div className="rounded-2xl bg-white p-4 ring-1 ring-line">
-          {open === "canvas" && <CanvasPanel busy={busy} setBusy={setBusy} onImport={onCanvasImport} onError={onError} />}
+          {open === "canvas" && <CanvasPanel busy={busy} setBusy={setBusy} onImportAll={onCanvasImportAll} onError={onError} />}
           {(open === "pdf" || open === "screenshot") && course && (
-            <FilePanel mode={open} course={course} busy={busy} setBusy={setBusy} onResult={onFileResult} onError={onError} />
+            <FilePanel mode={open} courseName={name} getTopics={() => latest(name).topics.map((t) => t.name)} busy={busy} setBusy={setBusy} onResult={onFileResult} onError={onError} />
           )}
           {open === "manual" && (
             <p className="text-sm text-ink/80">Add or fix anything in the course below. Dates you add here are used for reminders.</p>
@@ -189,7 +234,7 @@ export default function Upload({ initialCourseId, onNavigate = () => {} }) {
         </p>
       )}
 
-      {course && (saved || open === "manual") && <CourseEditor course={course} onChange={update} manualOpen={open === "manual"} />}
+      {course && (saved || open === "manual") && <CourseEditor course={course} onChange={update} manualOpen={open === "manual"} onDelete={saved ? () => deleteCourse(saved) : null} />}
 
       {saved && (saved.weights.length > 0 || saved.topics.length > 0) && (
         <button

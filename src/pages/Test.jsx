@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import confetti from "canvas-confetti";
 import { getQuiz, gradeAnswer } from "../lib/api.js";
 import { QUIZ_COUNT, MASTERY_THRESHOLD, SIDEKICK_NAME } from "../lib/config.js";
 import Sidekick from "../components/Sidekick.jsx";
@@ -14,7 +15,7 @@ const defaultTopic = (course, wanted) =>
   "";
 
 // Three ways to prove it: multiple choice, write what you understood, or explain it
-// out loud (Feynman: recorded, transcribed by /api/transcribe, Sparky reacts like a friend you're teaching).
+// out loud (Feynman: recorded, transcribed by /api/transcribe, Jepi reacts like a friend you're teaching).
 
 // Props (App.jsx passes these):
 //   courses          saved courses (from storage)
@@ -27,6 +28,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
   const course = courses.find((c) => c.id === courseId) ?? courses[0];
   const [topicName, setTopicName] = useState(() => defaultTopic(course, initialTopic));
   const [mode, setMode] = useState("mcq");
+  const [questionCount, setQuestionCount] = useState(QUIZ_COUNT);
+  const [difficulty, setDifficulty] = useState("medium");
 
   // Written mode
   const [writtenAnswer, setWrittenAnswer] = useState("");
@@ -61,6 +64,14 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
   const topic = course?.topics.find((t) => t.name === topicName);
   const question = quiz[currentQuestion];
 
+  // Confetti in Jepi's colours when a test is passed.
+  const passedScore = gradeResult ? gradeResult.score : submitted && quiz.length ? Math.round((Object.entries(answers).filter(([i, a]) => quiz[i]?.answer === a).length / quiz.length) * 100) : null;
+  useEffect(() => {
+    if (passedScore == null || passedScore < MASTERY_THRESHOLD) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    confetti({ particleCount: 120, spread: 75, origin: { y: 0.3 }, colors: ["#2FAD8F", "#8AD1D6", "#00FFCF", "#FE7E84", "#000090"] });
+  }, [passedScore]);
+
   // Stop microphone tracks when the component is unmounted.
   useEffect(() => {
     return () => {
@@ -91,7 +102,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
         courseName: course.name,
         topic: topic.name,
         summary: topic.summary,
-        count: QUIZ_COUNT,
+        count: questionCount,
+        difficulty,
       });
 
       if (!Array.isArray(result.quiz) || result.quiz.length === 0) {
@@ -483,7 +495,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
   return (
     <section className="space-y-6">
-      <Sidekick mood={sparky.mood} message={sparky.message} />
+      <Sidekick mood={sparky.mood} message={sparky.message} size={finalScore != null ? 104 : undefined} />
 
       {/* MODE AND TOPIC SELECTION */}
       {quiz.length === 0 && !gradeResult && (
@@ -620,12 +632,59 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           )}
 
           {mode === "mcq" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-2 text-sm font-medium">Questions</p>
+                <div className="flex gap-1.5" role="radiogroup" aria-label="Number of questions">
+                  {[3, 5, 10, 15].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={questionCount === n}
+                      onClick={() => setQuestionCount(n)}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold tabular transition ${
+                        questionCount === n ? "bg-ink text-white" : "bg-mist text-ink/80 hover:bg-line"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-sm font-medium">Difficulty</p>
+                <div className="flex gap-1.5" role="radiogroup" aria-label="Difficulty">
+                  {[
+                    ["easy", "Easy"],
+                    ["medium", "Medium"],
+                    ["hard", "Exam-level"],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={difficulty === id}
+                      onClick={() => setDifficulty(id)}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                        difficulty === id ? "bg-ink text-white" : "bg-mist text-ink/80 hover:bg-line"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === "mcq" && (
             <button
               onClick={startQuiz}
               disabled={loading || !topic}
               className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Generating questions..." : "Generate Quiz"}
+              {loading ? `${SIDEKICK_NAME} is writing ${questionCount} questions...` : `Start ${questionCount}-question quiz`}
             </button>
           )}
         </div>
@@ -700,7 +759,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               {topicName}
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-ink/60">
-              Imagine you're teaching Sparky this topic for the first time.
+              Imagine you're teaching Jepi this topic for the first time.
               Explain it in your own words, as clearly as possible. Try to
               include the key ideas, how they work, and why they matter.
             </p>
@@ -802,7 +861,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {grading
-              ? "Sparky is evaluating your explanation..."
+              ? "Jepi is evaluating your explanation..."
               : "Submit Explanation for Evaluation"}
           </button>
         </div>
@@ -841,7 +900,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
           <div className="rounded-xl border border-line bg-white p-4">
             <h3 className="mb-2 font-semibold text-brand-dark">
-              What you got right
+              What you nailed
             </h3>
 
             {gradeResult.gotRight?.length ? (
@@ -859,7 +918,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
           <div className="rounded-xl border border-line bg-white p-4">
             <h3 className="mb-2 font-semibold text-danger-dark">
-              What to improve
+              What to add next time
             </h3>
 
             {gradeResult.missed?.length ? (
