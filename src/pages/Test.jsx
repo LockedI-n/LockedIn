@@ -13,9 +13,8 @@ const defaultTopic = (course, wanted) =>
   course?.topics[0]?.name ??
   "";
 
-// Two ways to prove it: answer questions, or explain what you understood in your own words.
-// "feynman" grading: Sparky reacts like a friend you're teaching (see api/grade.js).
-const MODE_LABELS = { mcq: "Multiple choice", feynman: "Explain what you understood" };
+// Three ways to prove it: multiple choice, write what you understood, or explain it
+// out loud (Feynman: recorded, transcribed by /api/transcribe, Sparky reacts like a friend you're teaching).
 
 // Props (App.jsx passes these):
 //   courses          saved courses (from storage)
@@ -500,11 +499,11 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 onClick={() => setMode("mcq")}
                 className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
                   mode === "mcq"
-                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
-                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                    ? "border-brand bg-brand/10 text-brand-dark"
+                    : "border-line bg-mist text-ink/80 hover:border-teal"
                 }`}
               >
-                Multiple Choice
+                Multiple choice
               </button>
 
               <button
@@ -512,11 +511,11 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 onClick={() => setMode("written")}
                 className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
                   mode === "written"
-                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
-                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                    ? "border-brand bg-brand/10 text-brand-dark"
+                    : "border-line bg-mist text-ink/80 hover:border-teal"
                 }`}
               >
-                Written
+                Write it
               </button>
 
               <button
@@ -524,11 +523,11 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 onClick={() => setMode("feynman")}
                 className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
                   mode === "feynman"
-                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
-                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                    ? "border-brand bg-brand/10 text-brand-dark"
+                    : "border-line bg-mist text-ink/80 hover:border-teal"
                 }`}
               >
-                Feynman
+                Say it out loud
               </button>
             </div>
           </div>
@@ -636,13 +635,13 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       {mode !== "mcq" && quiz.length === 0 && !gradeResult && (
         <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
           <div>
-            <p className="text-sm font-medium text-amber-400">
+            <p className="text-sm font-medium text-brand-dark">
               {course.name}
             </p>
             <h3 className="mt-1 text-lg font-semibold">
               {topicName}
             </h3>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-2 text-sm text-ink/60">
               Explain this topic in your own words. Include the key ideas,
               how they work, and why they matter.
             </p>
@@ -665,7 +664,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             className="w-full resize-y rounded-xl border border-line bg-mist px-4 py-3 text-sm leading-relaxed text-ink outline-none placeholder:text-ink/50 focus:border-brand"
           />
 
-          <div className="flex justify-between text-xs text-slate-500">
+          <div className="flex justify-between text-xs text-ink/50">
             <span>
               Try to explain it without copying the topic summary.
             </span>
@@ -692,22 +691,22 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
       {/* FEYNMAN VOICE MODE */}
       {mode === "feynman" && quiz.length === 0 && !gradeResult && (
-        <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
           <div>
-            <p className="text-sm font-medium text-amber-400">
+            <p className="text-sm font-medium text-brand-dark">
               {course.name}
             </p>
             <h3 className="mt-1 text-lg font-semibold">
               {topicName}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            <p className="mt-2 text-sm leading-relaxed text-ink/60">
               Imagine you're teaching Sparky this topic for the first time.
               Explain it in your own words, as clearly as possible. Try to
               include the key ideas, how they work, and why they matter.
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
+          <div className="rounded-xl border border-line bg-mist p-4">
             <p className="mb-3 text-sm font-medium">
               Record your explanation
             </p>
@@ -718,7 +717,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                   type="button"
                   onClick={startRecording}
                   disabled={isTranscribing || grading}
-                  className="rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-brand px-5 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Start Recording
                 </button>
@@ -726,7 +725,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 <button
                   type="button"
                   onClick={stopRecording}
-                  className="rounded-lg bg-rose-500 px-5 py-3 font-semibold text-white transition hover:bg-rose-400"
+                  className="rounded-lg bg-danger px-5 py-3 font-semibold text-white transition hover:bg-danger-dark"
                 >
                   Stop Recording
                 </button>
@@ -734,20 +733,20 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </div>
 
             {isRecording && (
-              <p className="mt-3 flex items-center gap-2 text-sm text-rose-400">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-rose-400" />
+              <p className="mt-3 flex items-center gap-2 text-sm text-danger-dark">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
                 Recording your explanation...
               </p>
             )}
 
             {isTranscribing && (
-              <p className="mt-3 text-sm text-amber-300">
+              <p className="mt-3 text-sm text-brand-dark">
                 Transcribing your recording with ElevenLabs...
               </p>
             )}
 
             {recordingError && (
-              <p className="mt-3 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+              <p className="mt-3 rounded-lg bg-danger/10 p-3 text-sm text-danger-dark">
                 {recordingError}
               </p>
             )}
@@ -775,10 +774,10 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               rows={8}
               maxLength={10000}
               disabled={isRecording || isTranscribing}
-              className="w-full resize-y rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 focus:border-amber-400 disabled:opacity-60"
+              className="w-full resize-y rounded-xl border border-line bg-mist px-4 py-3 text-sm leading-relaxed text-ink outline-none placeholder:text-ink/50 focus:border-brand disabled:opacity-60"
             />
 
-            <div className="flex justify-between text-xs text-slate-500">
+            <div className="flex justify-between text-xs text-ink/50">
               <span>
                 You can edit the transcript before submitting it.
               </span>
@@ -787,7 +786,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
           </div>
 
           {gradeError && (
-            <p className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+            <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger-dark">
               {gradeError}
             </p>
           )}
@@ -800,7 +799,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               isTranscribing ||
               !feynmanTranscript.trim()
             }
-            className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {grading
               ? "Sparky is evaluating your explanation..."
@@ -812,8 +811,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       {/* WRITTEN AND FEYNMAN RESULTS */}
       {(mode === "written" || mode === "feynman") && gradeResult && (
         <div className="space-y-5">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
-            <p className="text-sm font-medium text-slate-400">
+          <div className="rounded-2xl border border-line bg-white p-6 text-center">
+            <p className="text-sm font-medium text-ink/60">
               {mode === "feynman"
                 ? "Feynman explanation evaluated"
                 : "Written response evaluated"}
@@ -821,15 +820,15 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
             <p
               className={`my-3 text-5xl font-bold ${
-                gradeResult.score >= 70
-                  ? "text-emerald-400"
-                  : "text-amber-400"
+                gradeResult.score >= MASTERY_THRESHOLD
+                  ? "text-brand-dark"
+                  : "text-coral"
               }`}
             >
               {gradeResult.score}%
             </p>
 
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-ink/80">
               Your explanation of {topicName}
             </p>
           </div>
@@ -840,8 +839,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </p>
           )}
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h3 className="mb-2 font-semibold text-emerald-400">
+          <div className="rounded-xl border border-line bg-white p-4">
+            <h3 className="mb-2 font-semibold text-brand-dark">
               What you got right
             </h3>
 
@@ -852,14 +851,14 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-ink/60">
                 No specific strengths were identified.
               </p>
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <h3 className="mb-2 font-semibold text-amber-400">
+          <div className="rounded-xl border border-line bg-white p-4">
+            <h3 className="mb-2 font-semibold text-danger-dark">
               What to improve
             </h3>
 
@@ -870,7 +869,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-ink/60">
                 Nothing major was missing. Nice work!
               </p>
             )}
@@ -892,7 +891,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               Your submitted answer
             </p>
 
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
               {mode === "feynman"
                 ? feynmanTranscript
                 : writtenAnswer}
@@ -925,7 +924,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               <p className="text-sm text-ink/60">{topicName}</p>
             </div>
 
-            <span className="text-sm text-slate-400">
+            <span className="text-sm text-ink/60">
               {answeredCount}/{quiz.length} answered
             </span>
           </div>
@@ -1074,8 +1073,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                     <span
                       className={`shrink-0 text-sm font-semibold ${
                         correct
-                          ? "text-emerald-400"
-                          : "text-rose-400"
+                          ? "text-brand-dark"
+                          : "text-danger-dark"
                       }`}
                     >
                       {correct ? "Correct" : "Incorrect"}
@@ -1116,7 +1115,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                       Explanation
                     </p>
 
-                    <p className="text-sm leading-relaxed text-slate-300">
+                    <p className="text-sm leading-relaxed text-ink/80">
                       {q.explanation}
                     </p>
                   </div>
