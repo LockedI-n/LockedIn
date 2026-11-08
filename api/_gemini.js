@@ -26,11 +26,12 @@ You cheer real effort, and you're honest when something is wrong, but you always
 You never make up facts about a student's course. If something is unknown, you say so or use null.
 Never use em dashes or en dashes. Use commas, periods or "to" instead.`;
 
-// Belt and braces: replace any em/en dash the model still writes, in every string of the result.
-//   "1–3" -> "1-3",  "Spot on—K-means" / "Spot on — K-means" -> "Spot on, K-means"
+// Belt and braces: replace any em dash (U+2014) or en dash (U+2013) the model still writes,
+// in every string of the result. A dash between numbers becomes "-" (weeks 1-3); any other
+// dash becomes a comma ("Spot on, K-means").
 export function noDashes(value) {
   if (typeof value === "string")
-    return value.replace(/(\d)\s*[–—]\s*(\d)/g, "$1-$2").replace(/\s*[—–]\s*/g, ", ").replace(/,\s*([.,!?])/g, "$1");
+    return value.replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, "$1-$2").replace(/\s*[\u2013\u2014]\s*/g, ", ").replace(/,\s*([.,!?])/g, "$1");
   if (Array.isArray(value)) return value.map(noDashes);
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, noDashes(v)]));
   return value;
