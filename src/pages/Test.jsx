@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getQuiz, gradeAnswer } from "../lib/api.js";
 import { QUIZ_COUNT, MASTERY_THRESHOLD, SIDEKICK_NAME } from "../lib/config.js";
 import Sidekick from "../components/Sidekick.jsx";
@@ -29,11 +28,28 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
   const course = courses.find((c) => c.id === courseId) ?? courses[0];
   const [topicName, setTopicName] = useState(() => defaultTopic(course, initialTopic));
   const [mode, setMode] = useState("mcq");
+
+  // Written mode
   const [writtenAnswer, setWrittenAnswer] = useState("");
+
+  // Feynman voice mode
+  const [feynmanTranscript, setFeynmanTranscript] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordingError, setRecordingError] = useState("");
+
+  // Recording references
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const mediaStreamRef = useRef(null);
+
+  // Grading
   const [gradeResult, setGradeResult] = useState(null);
   const [grading, setGrading] = useState(false);
   const [gradeError, setGradeError] = useState("");
   const [gradeFallback, setGradeFallback] = useState(false);
+
+  // MCQ
   const [quiz, setQuiz] = useState([]);
   const [answers, setAnswers] = useState({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -45,6 +61,19 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
 
   const topic = course?.topics.find((t) => t.name === topicName);
   const question = quiz[currentQuestion];
+
+  // Stop microphone tracks when the component is unmounted.
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+
+      mediaStreamRef.current?.getTracks().forEach((track) => {
+        track.stop();
+      });
+    };
+  }, []);
 
   // Generate a quiz for the selected topic.
   async function startQuiz() {
@@ -79,7 +108,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
     }
   }
 
-  // Record the selected answer for the current question.
+  // Record the selected answer for the current MCQ question.
   function selectAnswer(optionIndex) {
     if (submitted) return;
 
@@ -89,7 +118,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
     }));
   }
 
-  // Calculate the result and notify the parent component.
+  // Calculate the MCQ result and notify the parent component.
   function submitQuiz() {
     if (Object.keys(answers).length !== quiz.length) return;
 
@@ -114,7 +143,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
     });
   }
 
-  // Ask Gemini to evaluate the student's written explanation.
+  // Ask Gemini to evaluate a written explanation.
   async function submitWrittenAnswer() {
     if (!topic || !writtenAnswer.trim()) {
       setGradeError("Write an explanation before submitting.");
@@ -127,16 +156,20 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
     setGradeFallback(false);
 
     try {
+      const answer = writtenAnswer.trim();
+
       const result = await gradeAnswer({
         courseName: course.name,
         topic: topic.name,
         summary: topic.summary,
-        mode,
-        answer: writtenAnswer.trim(),
+        mode: "written",
+        answer,
       });
 
       if (typeof result.score !== "number") {
-        throw new Error("The grader returned an invalid result. Please try again.");
+        throw new Error(
+          "The grader returned an invalid result. Please try again."
+        );
       }
 
       setGradeResult(result);
@@ -148,30 +181,269 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
         mode,
         score: result.score,
         total: 100,
-        answer: writtenAnswer.trim(),
+        answer,
         feedback: result,
       });
     } catch (err) {
-      setGradeError(err.message || "Something went wrong while grading. Please try again.");
+      setGradeError(
+        err.message ||
+          "Something went wrong while grading. Please try again."
+      );
     } finally {
       setGrading(false);
     }
   }
 
+  // Start recording the student's Feynman explanation.
+  async function startRecording() {
+    setRecordingError("");
+    setFeynmanTranscript("");
+
+    try {
+      if (
+        !navigator.mediaDevices?.getUserMedia ||
+        !window.MediaRecorder
+      ) {
+        throw new Error(
+          "Audio recording is not supported in this browser."
+        );
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+
+      mediaStreamRef.current = stream;
+
+      // Use a recording format supported by the current browser.
+      const supportedTypes = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/ogg;codecs=opus",
+      ];
+
+      const mimeType = supportedTypes.find((type) =>
+        MediaRecorder.isTypeSupported(type)
+      );
+
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onerror = () => {
+        setRecordingError(
+          "Something went wrong while recording. Please try again."
+        );
+        setIsRecording(false);
+
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: recorder.mimeType || "application/octet-stream",
+        });
+
+        // Release the microphone after recording.
+        stream.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+
+        // Ignore an empty recording.
+        if (!audioBlob.size) {
+          setRecordingError(
+            "No audio was recorded. Please try again."
+          );
+          return;
+        }
+
+        await transcribeRecording(audioBlob);
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Recording error:", err);
+
+      mediaStreamRef.current?.getTracks().forEach((track) => {
+        track.stop();
+      });
+
+      mediaStreamRef.current = null;
+
+      setIsRecording(false);
+      setRecordingError(
+        err.message || "Could not access your microphone."
+      );
+    }
+  }
+
+  // Stop recording. The recorder's onstop handler starts transcription.
+  function stopRecording() {
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }
+
+  // Send the recorded audio to the ElevenLabs transcription endpoint.
+  async function transcribeRecording(audioBlob) {
+    setIsTranscribing(true);
+    setRecordingError("");
+    setFeynmanTranscript("");
+
+    try {
+      // Convert the audio Blob into Base64.
+      const reader = new FileReader();
+
+      const audioBase64 = await new Promise((resolve, reject) => {
+        reader.onloadend = () => {
+          if (typeof reader.result !== "string") {
+            reject(new Error("Could not read the audio recording."));
+            return;
+          }
+
+          resolve(reader.result.split(",")[1]);
+        };
+
+        reader.onerror = () => {
+          reject(new Error("Could not process the audio recording."));
+        };
+
+        reader.readAsDataURL(audioBlob);
+      });
+
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          audioBase64,
+          mimeType: audioBlob.type,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Speech transcription failed."
+        );
+      }
+
+      if (!data.transcript?.trim()) {
+        throw new Error(
+          "No speech was detected. Please record your explanation again."
+        );
+      }
+
+      setFeynmanTranscript(data.transcript);
+    } catch (err) {
+      console.error("Transcription error:", err);
+
+      setRecordingError(
+        err.message || "Unable to transcribe your recording."
+      );
+    } finally {
+      setIsTranscribing(false);
+    }
+  }
+
+  // Submit the Feynman transcript to the existing Gemini grading endpoint.
+  async function submitFeynmanAnswer() {
+    if (!topic || !feynmanTranscript.trim()) {
+      setGradeError("Record or enter an explanation before submitting.");
+      return;
+    }
+
+    setGrading(true);
+    setGradeError("");
+    setGradeResult(null);
+    setGradeFallback(false);
+
+    try {
+      const answer = feynmanTranscript.trim();
+
+      const result = await gradeAnswer({
+        courseName: course.name,
+        topic: topic.name,
+        summary: topic.summary,
+        mode: "feynman",
+        answer,
+      });
+
+      if (typeof result.score !== "number") {
+        throw new Error(
+          "The grader returned an invalid result. Please try again."
+        );
+      }
+
+      setGradeResult(result);
+      setGradeFallback(Boolean(result.fallback));
+
+      onComplete?.({
+        courseId: course.id,
+        topic: topicName,
+        mode: "feynman",
+        score: result.score,
+        total: 100,
+        answer,
+        feedback: result,
+      });
+    } catch (err) {
+      setGradeError(
+        err.message ||
+          "Something went wrong while grading. Please try again."
+      );
+    } finally {
+      setGrading(false);
+    }
+  }
+
+  // Reset the test and release any active microphone resources.
   function resetQuiz() {
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+
+    mediaStreamRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
+
+    mediaStreamRef.current = null;
+    audioChunksRef.current = [];
+
     setQuiz([]);
     setAnswers({});
     setCurrentQuestion(0);
     setSubmitted(false);
     setError("");
     setFallback(false);
+
     setWrittenAnswer("");
+    setFeynmanTranscript("");
+    setIsRecording(false);
+    setIsTranscribing(false);
+    setRecordingError("");
+
     setGradeResult(null);
     setGradeError("");
     setGradeFallback(false);
+    setGrading(false);
   }
 
   const answeredCount = Object.keys(answers).length;
+
   const score = quiz.length
     ? quiz.reduce(
         (total, q, index) =>
@@ -218,24 +490,49 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       {quiz.length === 0 && !gradeResult && (
         <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
           <div>
-            <p className="mb-2 text-sm font-medium">Choose a test mode</p>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(MODE_LABELS).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setMode(id)}
-                  className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
-                    mode === id
-                      ? "border-brand bg-brand/10 text-brand-dark"
-                      : "border-line bg-mist text-ink/80 hover:border-teal"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+            <p className="mb-2 text-sm font-medium">
+              Choose a test mode
+            </p>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("mcq")}
+                className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
+                  mode === "mcq"
+                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                Multiple Choice
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode("written")}
+                className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
+                  mode === "written"
+                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                Written
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode("feynman")}
+                className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
+                  mode === "feynman"
+                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                    : "border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                Feynman
+              </button>
             </div>
           </div>
+
           <div>
             <label className="mb-2 block text-sm font-medium">
               Course
@@ -323,7 +620,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </p>
           )}
 
-          {mode === "mcq" ? (
+          {mode === "mcq" && (
             <button
               onClick={startQuiz}
               disabled={loading || !topic}
@@ -331,7 +628,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             >
               {loading ? "Generating questions..." : "Generate Quiz"}
             </button>
-          ) : null}
+          )}
         </div>
       )}
 
@@ -339,18 +636,25 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
       {mode !== "mcq" && quiz.length === 0 && !gradeResult && (
         <div className="space-y-5 rounded-2xl border border-line bg-white p-5">
           <div>
-            <p className="text-sm font-medium text-brand-dark">{course.name}</p>
-            <h3 className="mt-1 text-lg font-semibold">{topicName}</h3>
-            <p className="mt-2 text-sm text-ink/60">
-              {mode === "feynman"
-                ? `Explain what you understood about this topic in your own words, as if you're teaching ${SIDEKICK_NAME} who has never heard of it. Use an example if you can. If you can explain it simply, you really get it.`
-                : "Explain this topic in your own words. Include the key ideas, how they work, and why they matter."}
+            <p className="text-sm font-medium text-amber-400">
+              {course.name}
+            </p>
+            <h3 className="mt-1 text-lg font-semibold">
+              {topicName}
+            </h3>
+            <p className="mt-2 text-sm text-slate-400">
+              Explain this topic in your own words. Include the key ideas,
+              how they work, and why they matter.
             </p>
           </div>
 
-          <label htmlFor="written-answer" className="block text-sm font-medium">
-            {mode === "feynman" ? "What I understood" : "Your explanation"}
+          <label
+            htmlFor="written-answer"
+            className="block text-sm font-medium"
+          >
+            Your explanation
           </label>
+
           <textarea
             id="written-answer"
             value={writtenAnswer}
@@ -360,8 +664,11 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             maxLength={10000}
             className="w-full resize-y rounded-xl border border-line bg-mist px-4 py-3 text-sm leading-relaxed text-ink outline-none placeholder:text-ink/50 focus:border-brand"
           />
-          <div className="flex justify-between text-xs text-ink/50">
-            <span>Try to explain it without copying the topic summary.</span>
+
+          <div className="flex justify-between text-xs text-slate-500">
+            <span>
+              Try to explain it without copying the topic summary.
+            </span>
             <span>{writtenAnswer.length}/10,000</span>
           </div>
 
@@ -376,26 +683,153 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             disabled={grading || !writtenAnswer.trim()}
             className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {grading ? `${SIDEKICK_NAME} is reading your explanation...` : "Check my understanding"}
+            {grading
+              ? "Evaluating your explanation..."
+              : "Submit for Evaluation"}
           </button>
         </div>
       )}
 
-      {/* WRITTEN RESULTS */}
-      {mode !== "mcq" && gradeResult && (
-        <div className="space-y-5">
-          <div className="rounded-2xl border border-line bg-white p-6 text-center">
-            <p className="text-sm font-medium text-ink/60">
-              {mode === "feynman" ? `${SIDEKICK_NAME} learned from you` : "Written response evaluated"}
+      {/* FEYNMAN VOICE MODE */}
+      {mode === "feynman" && quiz.length === 0 && !gradeResult && (
+        <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <div>
+            <p className="text-sm font-medium text-amber-400">
+              {course.name}
             </p>
+            <h3 className="mt-1 text-lg font-semibold">
+              {topicName}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              Imagine you're teaching Sparky this topic for the first time.
+              Explain it in your own words, as clearly as possible. Try to
+              include the key ideas, how they work, and why they matter.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
+            <p className="mb-3 text-sm font-medium">
+              Record your explanation
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              {!isRecording ? (
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  disabled={isTranscribing || grading}
+                  className="rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Start Recording
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="rounded-lg bg-rose-500 px-5 py-3 font-semibold text-white transition hover:bg-rose-400"
+                >
+                  Stop Recording
+                </button>
+              )}
+            </div>
+
+            {isRecording && (
+              <p className="mt-3 flex items-center gap-2 text-sm text-rose-400">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-rose-400" />
+                Recording your explanation...
+              </p>
+            )}
+
+            {isTranscribing && (
+              <p className="mt-3 text-sm text-amber-300">
+                Transcribing your recording with ElevenLabs...
+              </p>
+            )}
+
+            {recordingError && (
+              <p className="mt-3 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+                {recordingError}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="feynman-transcript"
+              className="block text-sm font-medium"
+            >
+              Your explanation (transcript)
+            </label>
+
+            <textarea
+              id="feynman-transcript"
+              value={feynmanTranscript}
+              onChange={(event) =>
+                setFeynmanTranscript(event.target.value)
+              }
+              placeholder={
+                isTranscribing
+                  ? "Your transcript will appear here..."
+                  : "Record your explanation to generate a transcript, or type your explanation here."
+              }
+              rows={8}
+              maxLength={10000}
+              disabled={isRecording || isTranscribing}
+              className="w-full resize-y rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 focus:border-amber-400 disabled:opacity-60"
+            />
+
+            <div className="flex justify-between text-xs text-slate-500">
+              <span>
+                You can edit the transcript before submitting it.
+              </span>
+              <span>{feynmanTranscript.length}/10,000</span>
+            </div>
+          </div>
+
+          {gradeError && (
+            <p className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400">
+              {gradeError}
+            </p>
+          )}
+
+          <button
+            onClick={submitFeynmanAnswer}
+            disabled={
+              grading ||
+              isRecording ||
+              isTranscribing ||
+              !feynmanTranscript.trim()
+            }
+            className="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {grading
+              ? "Sparky is evaluating your explanation..."
+              : "Submit Explanation for Evaluation"}
+          </button>
+        </div>
+      )}
+
+      {/* WRITTEN AND FEYNMAN RESULTS */}
+      {(mode === "written" || mode === "feynman") && gradeResult && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
+            <p className="text-sm font-medium text-slate-400">
+              {mode === "feynman"
+                ? "Feynman explanation evaluated"
+                : "Written response evaluated"}
+            </p>
+
             <p
               className={`my-3 text-5xl font-bold ${
-                gradeResult.score >= MASTERY_THRESHOLD ? "text-brand-dark" : "text-coral"
+                gradeResult.score >= 70
+                  ? "text-emerald-400"
+                  : "text-amber-400"
               }`}
             >
               {gradeResult.score}%
             </p>
-            <p className="text-sm text-ink/80">
+
+            <p className="text-sm text-slate-300">
               Your explanation of {topicName}
             </p>
           </div>
@@ -406,8 +840,11 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             </p>
           )}
 
-          <div className="rounded-xl border border-line bg-white p-4">
-            <h3 className="mb-2 font-semibold text-brand-dark">What you got right</h3>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 className="mb-2 font-semibold text-emerald-400">
+              What you got right
+            </h3>
+
             {gradeResult.gotRight?.length ? (
               <ul className="list-disc space-y-2 pl-5 text-sm text-ink/80">
                 {gradeResult.gotRight.map((item, index) => (
@@ -415,12 +852,17 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-ink/60">No specific strengths were identified.</p>
+              <p className="text-sm text-slate-400">
+                No specific strengths were identified.
+              </p>
             )}
           </div>
 
-          <div className="rounded-xl border border-line bg-white p-4">
-            <h3 className="mb-2 font-semibold text-danger-dark">What to improve</h3>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <h3 className="mb-2 font-semibold text-amber-400">
+              What to improve
+            </h3>
+
             {gradeResult.missed?.length ? (
               <ul className="list-disc space-y-2 pl-5 text-sm text-ink/80">
                 {gradeResult.missed.map((item, index) => (
@@ -428,7 +870,9 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-ink/60">Nothing major was missing. Nice work!</p>
+              <p className="text-sm text-slate-400">
+                Nothing major was missing. Nice work!
+              </p>
             )}
           </div>
 
@@ -447,8 +891,11 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/60">
               Your submitted answer
             </p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
-              {writtenAnswer}
+
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+              {mode === "feynman"
+                ? feynmanTranscript
+                : writtenAnswer}
             </p>
           </div>
 
@@ -467,7 +914,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
         </div>
       )}
 
-      {/* ACTIVE QUIZ */}
+      {/* ACTIVE MCQ QUIZ */}
       {quiz.length > 0 && !submitted && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
@@ -477,7 +924,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
               </p>
               <p className="text-sm text-ink/60">{topicName}</p>
             </div>
-            <span className="text-sm text-ink/60">
+
+            <span className="text-sm text-slate-400">
               {answeredCount}/{quiz.length} answered
             </span>
           </div>
@@ -530,6 +978,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                     >
                       {LETTERS[index]}
                     </span>
+
                     <span className="text-sm">{option}</span>
                   </button>
                 );
@@ -577,7 +1026,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
         </div>
       )}
 
-      {/* RESULTS */}
+      {/* MCQ RESULTS */}
       {quiz.length > 0 && submitted && (
         <div className="space-y-5">
           <div className="rounded-2xl border border-line bg-white p-6 text-center">
@@ -621,9 +1070,12 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                     <p className="font-medium">
                       {index + 1}. {q.question}
                     </p>
+
                     <span
                       className={`shrink-0 text-sm font-semibold ${
-                        correct ? "text-brand-dark" : "text-danger-dark"
+                        correct
+                          ? "text-emerald-400"
+                          : "text-rose-400"
                       }`}
                     >
                       {correct ? "Correct" : "Incorrect"}
@@ -633,7 +1085,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                   <div className="space-y-2 text-sm">
                     {q.options.map((option, optionIndex) => {
                       const isCorrect = optionIndex === q.answer;
-                      const isSelected = answers[index] === optionIndex;
+                      const isSelected =
+                        answers[index] === optionIndex;
 
                       return (
                         <div
@@ -649,6 +1102,7 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                           <span className="mr-2 font-bold">
                             {LETTERS[optionIndex]}.
                           </span>
+
                           {option}
                           {isCorrect && " ✓"}
                           {isSelected && !isCorrect && " (Your answer)"}
@@ -661,7 +1115,8 @@ export default function Test({ courses = [], initialCourseId, initialTopic, onCo
                     <p className="mb-1 text-xs font-semibold uppercase text-brand-dark">
                       Explanation
                     </p>
-                    <p className="text-sm leading-relaxed text-ink/80">
+
+                    <p className="text-sm leading-relaxed text-slate-300">
                       {q.explanation}
                     </p>
                   </div>
