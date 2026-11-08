@@ -87,7 +87,7 @@ export default function CanvasPanel({ busy, setBusy, onImportAll, onError }) {
           </ol>
           {CANVAS_TUTORIAL_URL ? (
             <a href={CANVAS_TUTORIAL_URL} target="_blank" rel="noreferrer" className="inline-block font-medium text-brand-dark hover:underline">
-              Watch the 1-minute video
+              Watch the video walkthrough
             </a>
           ) : (
             <p className="text-ink/50">Video walkthrough coming soon.</p>
